@@ -8,33 +8,41 @@ export default function ClipBoost() {
   const [voiceType, setVoiceType] = useState('adam'); // viral male, viral female
   const [renderStatus, setRenderStatus] = useState('');
 
-  const handleCreateVideo = () => {
+  const handleCreateVideo = async () => {
     if (!videoIdea.trim()) return alert('Please enter a video concept first!');
     
     setRendering(true);
     setVideoUrl(null);
-    
-    // Simulating the actual multi-step AI video rendering pipeline
-    setRenderStatus('🤖 Writing viral script outline...');
-    
-    setTimeout(() => {
-      setRenderStatus('🎙️ Generating ElevenLabs AI voiceover track...');
-    }, 1500);
+    setRenderStatus('🤖 Connecting to processing servers...');
 
-    setTimeout(() => {
-      setRenderStatus('🎬 Sourcing background clips and burning auto-subtitles...');
-    }, 3500);
+    try {
+      // Hit the Vercel serverless API endpoint we built
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idea: videoIdea,
+          platform: platform,
+          voice: voiceType
+        }),
+      });
 
-    setTimeout(() => {
-      setRenderStatus('⚡ Compiling final MP4 video layers...');
-    }, 5500);
+      const data = await response.json();
 
-    setTimeout(() => {
-      // Mock video file response (using a placeholder sample video)
-      setVideoUrl('https://www.w3schools.com/html/mov_bbb.mp4');
+      if (response.ok && data.videoUrl) {
+        setVideoUrl(data.videoUrl); // Set player window source straight to the cloud asset link
+      } else {
+        alert(`Pipeline error: ${data.error || 'Failed to process clip rendering.'}`);
+      }
+    } catch (err) {
+      console.error("Frontend fetch crash:", err);
+      alert("Could not connect to the backend video path.");
+    } finally {
       setRendering(false);
       setRenderStatus('');
-    }, 7500);
+    }
   };
 
   return (
@@ -144,7 +152,7 @@ export default function ClipBoost() {
               {!rendering && !videoUrl && (
                 <div className="text-center p-6">
                   <div className="w-16 h-16 bg-zinc-950 rounded-2xl flex items-center justify-center border border-zinc-800/60 mx-auto mb-4 text-2xl text-zinc-600">
-                    📺
+                    电视
                   </div>
                   <h4 className="text-white font-bold text-sm mb-1">Production Monitor View</h4>
                   <p className="text-zinc-500 text-xs max-w-[240px] mx-auto">
