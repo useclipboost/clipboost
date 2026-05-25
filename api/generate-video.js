@@ -15,9 +15,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Live key safety fallback
-  const isTestKey = apiKey.startsWith('sk_test_');
-  const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
+  // Explicitly routing to the sandbox environment to ensure compatibility across account tiers
+  const baseUrl = 'https://api.shotstack.io/stage';
 
   try {
     const renderResponse = await fetch(`${baseUrl}/render`, {
@@ -31,7 +30,7 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Clean, centered, readable caption text layer */
+              /* TRACK 1: Clean, beautifully styled text responsive overlay */
               clips: [
                 {
                   asset: {
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: Premium background cinematic motion graphic loop */
+              /* TRACK 2: High-definition 9:16 background cinematic video loops loop */
               clips: [
                 {
                   asset: {
@@ -78,7 +77,7 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling execution track loop
+    // Polling Loop to fetch finished media assets
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
@@ -99,12 +98,12 @@ export default async function handler(req, res) {
         videoUrl = statusData.response.url;
         break;
       } else if (currentStatus === 'failed') {
-        throw new Error('Shotstack failed to compile media tracks.');
+        throw new Error('Shotstack engine failed to process video clips timeline layout.');
       }
     }
 
     if (!videoUrl) {
-      throw new Error('Rendering timed out. Try generating your clip again!');
+      throw new Error('The production rendering pipeline timed out. Please try again!');
     }
 
     return res.status(200).json({
@@ -113,7 +112,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Pipeline Error:', error.message);
+    console.error('Pipeline Processing Crash:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
