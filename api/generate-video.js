@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
   try {
-    // Step 1: Submit the request to Shotstack
+    // Fire off the render request to the live production server
     const renderResponse = await fetch(`${baseUrl}/render`, {
       method: 'POST',
       headers: {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#4A154B', 
+          background: '#4A154B', // Solid purple canvas background
           tracks: [
             {
               clips: [
@@ -61,31 +61,10 @@ export default async function handler(req, res) {
       throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
     }
 
-    // Step 2: Grab the render ID 
-    const renderId = renderData.response.id;
-
-    // Step 3: Check status a couple of quick times to give it a head start
-    let videoUrl = null;
-    for (let i = 0; i < 2; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      
-      const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
-        method: 'GET',
-        headers: { 'x-api-key': apiKey }
-      });
-      
-      const statusData = await statusResponse.json();
-      if (statusData.response?.status === 'done') {
-        videoUrl = statusData.response.url;
-        break;
-      }
-    }
-
-    // Step 4: If it's fast, hand over the video. If it needs more time,
-    // pass back a fallback URL pattern so the app doesn't crash on timeout!
+    // Hand back the unique render task tracker ID to the frontend browser instantly
     return res.status(200).json({
       success: true,
-      videoUrl: videoUrl || `https://shotstack-api-v1-output.s3.amazonaws.com/${renderId}.mp4`
+      renderId: renderData.response.id
     });
 
   } catch (error) {
