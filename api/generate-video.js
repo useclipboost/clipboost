@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
   try {
-    // Fire off the render request to the live production server
+    // Step 1: Submit the video render layout to the live production system
     const renderResponse = await fetch(`${baseUrl}/render`, {
       method: 'POST',
       headers: {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#4A154B', // Solid purple canvas background
+          background: '#4A154B', // Solid purple canvas
           tracks: [
             {
               clips: [
@@ -61,10 +61,13 @@ export default async function handler(req, res) {
       throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
     }
 
-    // Hand back the unique render task tracker ID to the frontend browser instantly
+    const renderId = renderData.response.id;
+
+    // Step 2: Instantly return Shotstack's official player dashboard view link.
+    // This completely bypasses Vercel's 10-second timeout limits!
     return res.status(200).json({
       success: true,
-      renderId: renderData.response.id
+      videoUrl: `https://dashboard.shotstack.io/renders/${renderId}`
     });
 
   } catch (error) {
