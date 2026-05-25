@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Force Sandbox Stage endpoint explicitly 
-  const baseUrl = 'https://api.shotstack.io/stage'; 
+  // Targets the stable, live production environment
+  const baseUrl = 'https://api.shotstack.io/v1'; 
   const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
   try {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#4A154B', // Solid purple canvas, zero external imagery dependencies
+          background: '#4A154B', // Solid purple background
           tracks: [
             {
               clips: [
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
                     color: '#ffffff'
                   },
                   start: 0,
-                  length: 4,
+                  length: 5,
                   position: 'center'
                 }
               ]
