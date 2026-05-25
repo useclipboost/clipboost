@@ -63,7 +63,8 @@ export default async function handler(req) {
         'Authorization': `Bearer ${groqApiKey}`
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+// ✅ UPDATED LINE:
+model: 'llama-3.1-8b-instant',
         response_format: { type: "json_object" },
         messages: [
           {
