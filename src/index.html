@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClipBoost</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-black text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function ClipBoost() {
+            const [videoIdea, setVideoIdea] = React.useState('');
+            const examples = [
+                'I Tried AI Side Hustles For 7 Days',
+                'This Website Makes Thumbnails In Seconds',
+                'How Small Creators Are Going Viral Fast',
+                'The Secret To Better YouTube Clicks',
+            ];
+
+            return (
+                <div className="min-h-screen bg-black text-white px-6 py-8">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center py-16">
+                            <h1 className="text-6xl md:text-7xl font-black tracking-tight mb-6">ClipBoost</h1>
+                            <p className="text-zinc-400 text-xl max-w-3xl mx-auto mb-10">
+                                Generate viral YouTube titles, thumbnail text, hooks, and video ideas instantly.
+                            </p>
+                        </div>
+                        <div className="max-w-3xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl">
+                            <input
+                                type="text"
+                                value={videoIdea}
+                                onChange={(e) => setVideoIdea(e.target.value)}
+                                placeholder="Enter your video concept or topic..."
+                                className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-white mb-4"
+                            />
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <button onClick={() => alert('Generating titles for: ' + videoIdea)} className="bg-white text-black font-bold py-3 px-4 rounded-2xl hover:bg-zinc-200 transition">Titles</button>
+                                <button onClick={() => alert('Generating hooks for: ' + videoIdea)} className="bg-zinc-800 text-white font-bold py-3 px-4 rounded-2xl border border-zinc-700 hover:bg-zinc-700 transition">Hooks</button>
+                            </div>
+                            <div>
+                                <p className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-3">Examples</p>
+                                <div className="space-y-2">
+                                    {examples.map((ex, i) => (
+                                        <button key={i} onClick={() => setVideoIdea(ex)} className="w-full text-left bg-zinc-950 border border-zinc-800/50 rounded-xl px-4 py-3 text-zinc-400 hover:text-white hover:border-zinc-700 transition text-sm">
+                                            {ex}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ClipBoost />);
+    </script>
+</body>
+</html>
