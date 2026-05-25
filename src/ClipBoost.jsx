@@ -44,7 +44,7 @@ export default function ClipBoost() {
       // Step 2: Kick off frontend client-safe browser polling loop
       let completedUrl = null;
       let attempts = 0;
-      const maxAttempts = 40; // 40 loops * 3 seconds = 120 seconds maximum padding
+      const maxAttempts = 100; // 100 loops * 3 seconds = 300 seconds maximum padding
 
       while (!completedUrl && attempts < maxAttempts) {
         setStatusMessage(`Rendering Pipeline Active... Cooking video frames (Check #${attempts + 1})`);
