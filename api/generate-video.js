@@ -1,6 +1,15 @@
 // api/generate-video.js
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -19,7 +28,6 @@ export default async function handler(req, res) {
   const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
   try {
-    // Step 1: Submit the video render layout to the live production system
     const renderResponse = await fetch(`${baseUrl}/render`, {
       method: 'POST',
       headers: {
@@ -61,13 +69,16 @@ export default async function handler(req, res) {
       throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
     }
 
-    const renderId = renderData.response.id;
+    const trackedId = renderData.response.id;
 
-    // Step 2: Instantly return Shotstack's official player dashboard view link.
-    // This completely bypasses Vercel's 10-second timeout limits!
+    // We send back ALL variations to automatically satisfy your custom frontend variables!
     return res.status(200).json({
       success: true,
-      videoUrl: `https://dashboard.shotstack.io/renders/${renderId}`
+      renderId: trackedId,
+      id: trackedId,
+      response: {
+        id: trackedId
+      }
     });
 
   } catch (error) {
