@@ -30,7 +30,7 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Centered, readable caption layer with drop shadow */
+              /* TRACK 1: Vertical Centered Text Overlay */
               clips: [
                 {
                   asset: {
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: Premium background motion graphic loop */
+              /* TRACK 2: Cinematic Atmospheric Background Loop */
               clips: [
                 {
                   asset: {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
         },
         output: {
           format: 'mp4',
-          resolution: '9:16' // Perfect vertical format for TikTok/Shorts
+          resolution: '9:16'
         }
       })
     });
@@ -75,6 +75,42 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling Loop Fixed & Closed Properly
+    // Fully closed polling execution block
     let videoUrl = null;
-    let attempts
+    let attempts = 0;
+    const maxAttempts = 35; 
+
+    while (!videoUrl && attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      attempts++;
+
+      const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey }
+      });
+
+      const statusData = await statusResponse.json();
+      const currentStatus = statusData.response?.status;
+
+      if (currentStatus === 'done') {
+        videoUrl = statusData.response.url;
+        break;
+      } else if (currentStatus === 'failed') {
+        throw new Error('Shotstack failed to compile media tracks.');
+      }
+    }
+
+    if (!videoUrl) {
+      throw new Error('Rendering timed out. Try generating your clip again!');
+    }
+
+    return res.status(200).json({
+      success: true,
+      videoUrl: videoUrl
+    });
+
+  } catch (error) {
+    console.error('Pipeline Error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+}
