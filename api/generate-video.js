@@ -15,11 +15,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Safely routes to the live production server since you have a live sk_live key
+  // Pure production router designed explicitly for sk_live keys
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
-  // Sanitize user text input to prevent JSON data breakage
+  // Sanitize text input to prevent JSON layout parsing failures
   const sanitizedText = idea
     .replace(/[\/\\]/g, '')
     .replace(/"/g, '\\"')
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Main Text Typography Layer */
+              /* TRACK 1: Text Overlay Layer */
               clips: [
                 {
                   asset: {
@@ -54,5 +54,72 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: Looping Media Background Loop */
-              clips:
+              /* TRACK 2: Looping Background Video Layer */
+              clips: [
+                {
+                  asset: {
+                    type: 'video',
+                    src: 'https://cdn.pixabay.com/video/2021/04/12/70884-537367808_large.mp4'
+                  },
+                  start: 0,
+                  length: 5,
+                  fit: 'cover'
+                }
+              ]
+            }
+          ]
+        },
+        output: {
+          format: 'mp4',
+          resolution: '9:16'
+        }
+      })
+    });
+
+    const renderData = await renderResponse.json();
+
+    if (!renderResponse.ok) {
+      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
+    }
+
+    const renderId = renderData.response.id;
+
+    // Polling System
+    let videoUrl = null;
+    let attempts = 0;
+    const maxAttempts = 35; 
+
+    while (!videoUrl && attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      attempts++;
+
+      const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey }
+      });
+
+      const statusData = await statusResponse.json();
+      const currentStatus = statusData.response?.status;
+
+      if (currentStatus === 'done') {
+        videoUrl = statusData.response.url;
+        break;
+      } else if (currentStatus === 'failed') {
+        throw new Error('Shotstack engine failed to compile video assets.');
+      }
+    }
+
+    if (!videoUrl) {
+      throw new Error('The production rendering pipeline timed out. Please try again!');
+    }
+
+    return res.status(200).json({
+      success: true,
+      videoUrl: videoUrl
+    });
+
+  } catch (error) {
+    console.error('Pipeline Processing Crash:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+}
