@@ -75,9 +75,6 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling Loop
+    // Polling Loop Fixed & Closed Properly
     let videoUrl = null;
-    let attempts = 0;
-    const maxAttempts = 35; 
-
-    while (!
+    let attempts
