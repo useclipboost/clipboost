@@ -15,12 +15,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel environment settings.' });
   }
 
-  // AUTOMATIC SERVER SWITCH: Uses staging for test keys, v1 for live keys
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
   try {
-    // 1. Send timeline blueprint to Shotstack
+    // 1. Submit the rendering payload
     const renderResponse = await fetch(`${baseUrl}/render`, {
       method: 'POST',
       headers: {
@@ -36,7 +35,7 @@ export default async function handler(req, res) {
                 {
                   asset: {
                     type: 'html',
-                    html: `<div style="color: #ffffff; font-size: 24px; text-align: center; font-family: sans-serif; font-weight: 900; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 30px; background: #111111;">${idea}</div>`,
+                    html: `<div style="color: #ffffff; font-size: 28px; text-align: center; font-family: sans-serif; font-weight: 900; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; background: #111111;">${idea}</div>`,
                     css: "body { margin: 0; }"
                   },
                   start: 0,
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
         },
         output: {
           format: 'mp4',
-          resolution: 'sd' 
+          resolution: 'preview' // Using 'preview' resolution renders up to 4x faster on Shotstack!
         }
       })
     });
@@ -56,19 +55,19 @@ export default async function handler(req, res) {
     const renderData = await renderResponse.json();
 
     if (!renderResponse.ok) {
-      // If Shotstack rejects the request (e.g. out of credits), pass the real reason to the screen
       throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
     }
 
     const renderId = renderData.response.id;
 
-    // 2. Polling Loop to wait for video compiling
+    // 2. Expanded Polling Loop (increased from 15 to 35 attempts for deep safety)
     let videoUrl = null;
     let attempts = 0;
-    const maxAttempts = 15; 
+    const maxAttempts = 35; 
 
     while (!videoUrl && attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Wait 2.5 seconds between checks to let the cloud cluster work smoothly
+      await new Promise((resolve) => setTimeout(resolve, 2500));
       attempts++;
 
       const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
@@ -88,7 +87,7 @@ export default async function handler(req, res) {
     }
 
     if (!videoUrl) {
-      throw new Error('Cloud rendering timed out. Try generating again.');
+      throw new Error('The cloud cluster is still building your track. Please wait a moment and try pressing generate again!');
     }
 
     return res.status(200).json({
@@ -98,7 +97,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Pipeline Error:', error.message);
-    // REMOVED THE RABBIT FALLBACK: Now it sends the actual error text to your frontend
     return res.status(500).json({ error: error.message });
   }
 }
