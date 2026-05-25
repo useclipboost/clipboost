@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
+  // Live key safety fallback
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
@@ -30,22 +31,24 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Vertical Centered Text Overlay */
+              /* TRACK 1: Clean, centered, readable caption text layer */
               clips: [
                 {
                   asset: {
                     type: 'html',
-                    html: `<div style="color: #ffffff; font-size: 46px; text-align: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 900; width: 1080px; height: 1920px; display: flex; align-items: center; justify-content: center; padding: 120px; box-sizing: border-box; text-shadow: 5px 5px 0px #000000; line-height: 1.4; letter-spacing: -1px;">${idea}</div>`,
-                    css: "body { margin: 0; padding: 0; }"
+                    html: `<div style="color: #ffffff; font-size: 42px; text-align: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 900; text-shadow: 4px 4px 0px #000000; line-height: 1.4; letter-spacing: -1px;">${idea}</div>`,
+                    css: "body { margin: 0; padding: 40px; display: flex; align-items: center; justify-content: center; height: 100vh; }",
+                    width: 720,
+                    height: 1280
                   },
                   start: 0,
-                  length: 6,
+                  length: 5,
                   position: 'center'
                 }
               ]
             },
             {
-              /* TRACK 2: Cinematic Atmospheric Background Loop */
+              /* TRACK 2: Premium background cinematic motion graphic loop */
               clips: [
                 {
                   asset: {
@@ -53,7 +56,7 @@ export default async function handler(req, res) {
                     src: 'https://cdn.pixabay.com/video/2021/04/12/70884-537367808_large.mp4'
                   },
                   start: 0,
-                  length: 6,
+                  length: 5,
                   fit: 'cover'
                 }
               ]
@@ -75,7 +78,7 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Fully closed polling execution block
+    // Polling execution track loop
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
