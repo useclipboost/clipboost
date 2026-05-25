@@ -15,15 +15,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Pure production router designed explicitly for sk_live keys
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
-
-  // Sanitize text input to prevent JSON layout parsing failures
-  const sanitizedText = idea
-    .replace(/[\/\\]/g, '')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, ' ');
+  const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
   try {
     const renderResponse = await fetch(`${baseUrl}/render`, {
@@ -34,18 +28,18 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#000000',
+          background: '#111111',
           tracks: [
             {
               /* TRACK 1: Text Overlay Layer */
               clips: [
                 {
                   asset: {
-                    type: 'html',
-                    html: `<div style="color: #ffffff; font-size: 38px; text-align: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 900; text-shadow: 4px 4px 0px #000000; line-height: 1.4; letter-spacing: -1px; width: 640px; word-wrap: break-word;">${sanitizedText}</div>`,
-                    css: "body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; height: 1280px; width: 720px; }",
-                    width: 720,
-                    height: 1280
+                    type: 'title',
+                    text: cleanText,
+                    style: 'minimal',
+                    size: 'small',
+                    color: '#ffffff'
                   },
                   start: 0,
                   length: 5,
@@ -54,12 +48,12 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: Looping Background Video Layer */
+              /* TRACK 2: Low-Cost Image Background Layer (Consumes only 1 Credit) */
               clips: [
                 {
                   asset: {
-                    type: 'video',
-                    src: 'https://cdn.pixabay.com/video/2021/04/12/70884-537367808_large.mp4'
+                    type: 'image',
+                    src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=720&auto=format&fit=crop'
                   },
                   start: 0,
                   length: 5,
@@ -84,7 +78,7 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling System
+    // API Polling Loop
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
@@ -105,12 +99,12 @@ export default async function handler(req, res) {
         videoUrl = statusData.response.url;
         break;
       } else if (currentStatus === 'failed') {
-        throw new Error('Shotstack engine failed to compile video assets.');
+        throw new Error('Shotstack engine failed to process video tracks.');
       }
     }
 
     if (!videoUrl) {
-      throw new Error('The production rendering pipeline timed out. Please try again!');
+      throw new Error('The video rendering pipeline timed out.');
     }
 
     return res.status(200).json({
@@ -119,7 +113,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Pipeline Processing Crash:', error.message);
+    console.error('Processing Crash:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
