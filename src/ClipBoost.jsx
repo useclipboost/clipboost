@@ -68,4 +68,129 @@ export default function ClipBoost() {
             </h2>
 
             {/* Input Box */}
-            <div className="
+            <div className="mb-6">
+              <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">Video Concept or Topic</label>
+              <textarea
+                value={videoIdea}
+                onChange={(e) => setVideoIdea(e.target.value)}
+                placeholder="Ex: 3 dark psychology tricks that salespeople use to force you to buy expensive items..."
+                rows="3"
+                className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 text-sm transition-all resize-none"
+              />
+            </div>
+
+            {/* Target Media Platform Selectors */}
+            <div className="mb-6">
+              <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">Target Platform</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'tiktok', label: 'TikTok Short' },
+                  { id: 'youtube_shorts', label: 'YT Shorts' },
+                  { id: 'reels', label: 'IG Reels' }
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPlatform(p.id)}
+                    className={`py-3 px-2 rounded-xl text-xs font-bold border transition-all ${
+                      platform === p.id 
+                        ? 'bg-white text-black border-white' 
+                        : 'bg-black text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Actor Voice Selection */}
+            <div className="mb-8">
+              <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">AI Narrator Voice Voice</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'adam', label: '🗣️ Adam (Deep Viral Male)' },
+                  { id: 'rachel', label: '👩‍💼 Rachel (Energetic Female)' }
+                ].map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setVoiceType(v.id)}
+                    className={`py-3 px-3 rounded-xl text-xs font-medium text-left border transition-all ${
+                      voiceType === v.id 
+                        ? 'bg-zinc-800 text-white border-zinc-600 shadow-inner' 
+                        : 'bg-black text-zinc-500 border-zinc-800/80 hover:border-zinc-700'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button Action */}
+            <button
+              onClick={handleCreateVideo}
+              disabled={rendering}
+              className="w-full bg-gradient-to-r from-neutral-100 to-zinc-300 text-black font-extrabold text-base py-4 rounded-2xl active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
+            >
+              {rendering ? 'Generating Assets...' : '✨ Generate Short Video (1 Credit)'}
+            </button>
+          </div>
+
+          {/* Right Side: Instant Real-time Studio Player Render monitor */}
+          <div className="lg:col-span-5 flex flex-col gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
+              
+              {/* State A: Complete Idle default */}
+              {!rendering && !videoUrl && (
+                <div className="text-center p-6">
+                  <div className="w-16 h-16 bg-zinc-950 rounded-2xl flex items-center justify-center border border-zinc-800/60 mx-auto mb-4 text-2xl text-zinc-600">
+                    📺
+                  </div>
+                  <h4 className="text-white font-bold text-sm mb-1">Production Monitor View</h4>
+                  <p className="text-zinc-500 text-xs max-w-[240px] mx-auto">
+                    Fill out your generation specs on the left dashboard pane to render your video file timeline.
+                  </p>
+                </div>
+              )}
+
+              {/* State B: Processing Engine Monitor */}
+              {rendering && (
+                <div className="text-center px-4 w-full">
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-zinc-700 border-t-white mx-auto mb-6"></div>
+                  <p className="text-zinc-200 font-semibold text-sm mb-2">Rendering Pipeline Active</p>
+                  <p className="text-zinc-500 text-xs font-mono bg-black/40 border border-zinc-800 rounded-xl py-2.5 px-3 max-w-[280px] mx-auto animate-pulse">
+                    {renderStatus}
+                  </p>
+                </div>
+              )}
+
+              {/* State C: Finished Output Render Ready to download */}
+              {!rendering && videoUrl && (
+                <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
+                  <div className="aspect-[9/16] w-[210px] bg-black rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl relative group mb-4">
+                    <video 
+                      src={videoUrl} 
+                      className="w-full h-full object-cover" 
+                      controls
+                      autoPlay
+                      loop
+                    />
+                  </div>
+                  <a 
+                    href={videoUrl} 
+                    download="clipboost_render.mp4"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/10 flex items-center gap-2"
+                  >
+                    📥 Download Rendered MP4
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
