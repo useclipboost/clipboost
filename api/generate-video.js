@@ -12,14 +12,13 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.SHOTSTACK_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key missing from Vercel environment settings.' });
+    return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
   try {
-    // 1. Submit the rendering payload
     const renderResponse = await fetch(`${baseUrl}/render`, {
       method: 'POST',
       headers: {
@@ -28,18 +27,34 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#0a0a0c',
+          background: '#000000',
           tracks: [
             {
+              /* TRACK 1: Centered, readable caption layer with drop shadow */
               clips: [
                 {
                   asset: {
                     type: 'html',
-                    html: `<div style="color: #ffffff; font-size: 28px; text-align: center; font-family: sans-serif; font-weight: 900; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; background: #111111;">${idea}</div>`,
-                    css: "body { margin: 0; }"
+                    html: `<div style="color: #ffffff; font-size: 46px; text-align: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 900; width: 1080px; height: 1920px; display: flex; align-items: center; justify-content: center; padding: 120px; box-sizing: border-box; text-shadow: 5px 5px 0px #000000; line-height: 1.4; letter-spacing: -1px;">${idea}</div>`,
+                    css: "body { margin: 0; padding: 0; }"
                   },
                   start: 0,
-                  length: 4
+                  length: 6,
+                  position: 'center'
+                }
+              ]
+            },
+            {
+              /* TRACK 2: Premium background motion graphic loop */
+              clips: [
+                {
+                  asset: {
+                    type: 'video',
+                    src: 'https://cdn.pixabay.com/video/2021/04/12/70884-537367808_large.mp4'
+                  },
+                  start: 0,
+                  length: 6,
+                  fit: 'cover'
                 }
               ]
             }
@@ -47,7 +62,7 @@ export default async function handler(req, res) {
         },
         output: {
           format: 'mp4',
-          resolution: 'preview' // Using 'preview' resolution renders up to 4x faster on Shotstack!
+          resolution: '9:16' // Perfect vertical format for TikTok/Shorts
         }
       })
     });
@@ -60,43 +75,9 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // 2. Expanded Polling Loop (increased from 15 to 35 attempts for deep safety)
+    // Polling Loop
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
 
-    while (!videoUrl && attempts < maxAttempts) {
-      // Wait 2.5 seconds between checks to let the cloud cluster work smoothly
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      attempts++;
-
-      const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
-        method: 'GET',
-        headers: { 'x-api-key': apiKey }
-      });
-
-      const statusData = await statusResponse.json();
-      const currentStatus = statusData.response?.status;
-
-      if (currentStatus === 'done') {
-        videoUrl = statusData.response.url;
-        break;
-      } else if (currentStatus === 'failed') {
-        throw new Error('Shotstack failed to compile video tracks.');
-      }
-    }
-
-    if (!videoUrl) {
-      throw new Error('The cloud cluster is still building your track. Please wait a moment and try pressing generate again!');
-    }
-
-    return res.status(200).json({
-      success: true,
-      videoUrl: videoUrl
-    });
-
-  } catch (error) {
-    console.error('Pipeline Error:', error.message);
-    return res.status(500).json({ error: error.message });
-  }
-}
+    while (!
