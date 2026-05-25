@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Dynamic router matching your sk_live key to Shotstack's required production endpoint
+  // Pure production router designed explicitly for sk_live keys
   const isTestKey = apiKey.startsWith('sk_test_');
   const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Text caption overlay layer */
+              /* TRACK 1: Text Overlay Layer */
               clips: [
                 {
                   asset: {
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: HD Looping video background layer */
+              /* TRACK 2: Looping Background Video Layer */
               clips: [
                 {
                   asset: {
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling Loop
+    // Polling System
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
