@@ -15,8 +15,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Explicitly routing to the sandbox environment to ensure compatibility across account tiers
-  const baseUrl = 'https://api.shotstack.io/stage';
+  // Dynamic router matching your sk_live key to Shotstack's required production endpoint
+  const isTestKey = apiKey.startsWith('sk_test_');
+  const baseUrl = isTestKey ? 'https://api.shotstack.io/stage' : 'https://api.shotstack.io/v1';
 
   try {
     const renderResponse = await fetch(`${baseUrl}/render`, {
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              /* TRACK 1: Clean, beautifully styled text responsive overlay */
+              /* TRACK 1: Text caption overlay layer */
               clips: [
                 {
                   asset: {
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
               ]
             },
             {
-              /* TRACK 2: High-definition 9:16 background cinematic video loops loop */
+              /* TRACK 2: HD Looping video background layer */
               clips: [
                 {
                   asset: {
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
 
     const renderId = renderData.response.id;
 
-    // Polling Loop to fetch finished media assets
+    // Polling Loop
     let videoUrl = null;
     let attempts = 0;
     const maxAttempts = 35; 
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
         videoUrl = statusData.response.url;
         break;
       } else if (currentStatus === 'failed') {
-        throw new Error('Shotstack engine failed to process video clips timeline layout.');
+        throw new Error('Shotstack engine failed to compile video assets.');
       }
     }
 
