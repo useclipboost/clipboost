@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
   }
 
-  // Targets the stable, live production environment
+  // Force live production environment URL path
   const baseUrl = 'https://api.shotstack.io/v1'; 
   const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
@@ -24,21 +24,21 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey, 
+        'x-api-key': apiKey
       },
       body: JSON.stringify({
         timeline: {
-          background: '#4A154B', // Solid purple background
+          background: '#4A154B', // Solid purple canvas
           tracks: [
             {
               clips: [
                 {
                   asset: {
-                    type: 'title',
-                    text: cleanText,
-                    style: 'minimal',
-                    size: 'small',
-                    color: '#ffffff'
+                    type: 'html',
+                    html: `<p>${cleanText}</p>`,
+                    css: 'p { font-family: "Helvetica"; color: #ffffff; font-size: 32px; text-align: center; }',
+                    width: 600,
+                    height: 200
                   },
                   start: 0,
                   length: 5,
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         },
         output: {
           format: 'mp4',
-          resolution: '9:16'
+          resolution: 'sd'
         }
       })
     });
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     const maxAttempts = 35; 
 
     while (!videoUrl && attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       attempts++;
 
       const statusResponse = await fetch(`${baseUrl}/render/${renderId}`, {
