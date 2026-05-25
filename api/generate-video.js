@@ -1,88 +1,54 @@
-// api/generate-video.js
+// Example logic blueprint for an automated AI Video Asset Pipeline
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  const { idea } = req.body;
-  if (!idea) {
-    return res.status(400).json({ error: 'Missing video concept prompt' });
-  }
-
-  const apiKey = process.env.SHOTSTACK_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'API Key missing from Vercel settings.' });
-  }
-
-  const baseUrl = 'https://api.shotstack.io/v1'; 
-  const cleanText = idea.replace(/"/g, "'").replace(/\n/g, ' ').trim();
+  const { idea, voiceSelection } = req.body; 
 
   try {
-    const renderResponse = await fetch(`${baseUrl}/render`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey
-      },
-      body: JSON.stringify({
-        timeline: {
-          background: '#4A154B', // Solid purple canvas
-          tracks: [
-            {
-              clips: [
-                {
-                  asset: {
-                    type: 'html',
-                    html: `<p>${cleanText}</p>`,
-                    css: 'p { font-family: "Helvetica"; color: #ffffff; font-size: 32px; text-align: center; }',
-                    width: 600,
-                    height: 200
-                  },
-                  start: 0,
-                  length: 5,
-                  position: 'center'
-                }
-              ]
-            }
-          ]
-        },
-        output: {
-          format: 'mp4',
-          resolution: 'sd'
-        }
-      })
-    });
+    // STEP 1: Prompt Enhancement (OpenAI API)
+    // We send your raw input ("space facts") to GPT and say: 
+    // "Turn this into a structured 3-sentence viral narrative script with matching graphic design prompts."
+    const aiScriptData = await callOpenAIResult(idea);
+    // Returns: 
+    // scriptText: "The universe holds secrets that defy reality..."
+    // visualPrompts: ["Cinematic cosmic explosion", "Astronaut looking into a nebula"]
 
-    const renderData = await renderResponse.json();
+    // STEP 2: Premium Narrative Voice Creation (ElevenLabs API)
+    // We pass the clean text script to ElevenLabs to compile an ultra-realistic .mp3 audio file URL.
+    const audioTrackUrl = await generateElevenLabsVoice(aiScriptData.scriptText, voiceSelection);
 
-    if (!renderResponse.ok) {
-      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
+    // STEP 3: Dynamic Image Generation (Leonardo AI / Stable Diffusion API)
+    // The script loops through the visual prompts generated in Step 1 to cook up custom images.
+    const imageAssetUrls = [];
+    for (const prompt of aiScriptData.visualPrompts) {
+       const imgUrl = await generateAIImage(prompt);
+       imageAssetUrls.push(imgUrl);
     }
 
-    const trackedId = renderData.response.id;
-
-    // We send back ALL variations to automatically satisfy your custom frontend variables!
-    return res.status(200).json({
-      success: true,
-      renderId: trackedId,
-      id: trackedId,
-      response: {
-        id: trackedId
-      }
+    // STEP 4: Media Track Assembly (Shotstack API)
+    // Instead of just building a solid color background box, we stack the assets like layers:
+    // Layer A: The ElevenLabs .mp3 audio voiceover tracking file
+    // Layer B: The array of generated AI image background clips timed perfectly to change scenes
+    // Layer C: Shotstack's kinetic subtitle caption overlays positioned directly over the canvas center
+    const shotstackResponse = await fetch('https://api.shotstack.io/v1/render', {
+       method: 'POST',
+       body: JSON.stringify({
+          timeline: {
+             soundtrack: { src: audioTrackUrl }, // ElevenLabs file drops here
+             tracks: [
+                { clips: buildSubtitleCaptions(aiScriptData.scriptText) }, // Overlay text
+                { clips: buildVideoScenes(imageAssetUrls) } // AI Images match scenes here
+             ]
+          },
+          output: { format: 'mp4', resolution: 'hd' }
+       })
     });
 
+    const renderData = await shotstackResponse.json();
+
+    // Hand the execution identifier over to your working frontend loop
+    return res.status(200).json({ success: true, renderId: renderData.response.id });
+
   } catch (error) {
-    console.error('Processing Crash:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
