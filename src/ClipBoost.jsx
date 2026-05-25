@@ -4,8 +4,8 @@ export default function ClipBoost() {
   const [videoIdea, setVideoIdea] = useState('');
   const [rendering, setRendering] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [platform, setPlatform] = useState('tiktok'); // tiktok, youtube_shorts, reels
-  const [voiceType, setVoiceType] = useState('adam'); // viral male, viral female
+  const [platform, setPlatform] = useState('tiktok');
+  const [voiceType, setVoiceType] = useState('adam');
   const [renderStatus, setRenderStatus] = useState('');
 
   const handleCreateVideo = async () => {
@@ -16,7 +16,6 @@ export default function ClipBoost() {
     setRenderStatus('🤖 Connecting to processing servers...');
 
     try {
-      // Hit the Vercel serverless API endpoint we built
       const response = await fetch('/api/generate-video', {
         method: 'POST',
         headers: {
@@ -32,7 +31,7 @@ export default function ClipBoost() {
       const data = await response.json();
 
       if (response.ok && data.videoUrl) {
-        setVideoUrl(data.videoUrl); // Set player window source straight to the cloud asset link
+        setVideoUrl(data.videoUrl);
       } else {
         alert(`Pipeline error: ${data.error || 'Failed to process clip rendering.'}`);
       }
@@ -66,28 +65,26 @@ export default function ClipBoost() {
           </div>
         </div>
 
-        {/* Main Split-Screen Grid Layout */}
+        {/* Layout Split Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Side: Control Board Options */}
+          {/* Left Panel */}
           <div className="lg:col-span-7 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <span>🎬</span> AI Video Generation Engine
             </h2>
 
-            {/* Input Box */}
             <div className="mb-6">
               <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">Video Concept or Topic</label>
               <textarea
                 value={videoIdea}
                 onChange={(e) => setVideoIdea(e.target.value)}
-                placeholder="Ex: 3 dark psychology tricks that salespeople use to force you to buy expensive items..."
+                placeholder="Ex: Why saving money in a traditional bank account is actually losing you money every single year..."
                 rows="3"
                 className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 text-sm transition-all resize-none"
               />
             </div>
 
-            {/* Target Media Platform Selectors */}
             <div className="mb-6">
               <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">Target Platform</label>
               <div className="grid grid-cols-3 gap-2">
@@ -111,9 +108,8 @@ export default function ClipBoost() {
               </div>
             </div>
 
-            {/* AI Actor Voice Selection */}
             <div className="mb-8">
-              <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">AI Narrator Voice Voice</label>
+              <label className="block text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">AI Narrator Voice</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: 'adam', label: '🗣️ Adam (Deep Viral Male)' },
@@ -134,7 +130,6 @@ export default function ClipBoost() {
               </div>
             </div>
 
-            {/* Submit Button Action */}
             <button
               onClick={handleCreateVideo}
               disabled={rendering}
@@ -144,15 +139,14 @@ export default function ClipBoost() {
             </button>
           </div>
 
-          {/* Right Side: Instant Real-time Studio Player Render monitor */}
+          {/* Right Video Monitor View Panel */}
           <div className="lg:col-span-5 flex flex-col gap-4">
             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
               
-              {/* State A: Complete Idle default */}
               {!rendering && !videoUrl && (
                 <div className="text-center p-6">
                   <div className="w-16 h-16 bg-zinc-950 rounded-2xl flex items-center justify-center border border-zinc-800/60 mx-auto mb-4 text-2xl text-zinc-600">
-                    电视
+                    📺
                   </div>
                   <h4 className="text-white font-bold text-sm mb-1">Production Monitor View</h4>
                   <p className="text-zinc-500 text-xs max-w-[240px] mx-auto">
@@ -161,7 +155,6 @@ export default function ClipBoost() {
                 </div>
               )}
 
-              {/* State B: Processing Engine Monitor */}
               {rendering && (
                 <div className="text-center px-4 w-full">
                   <div className="animate-spin rounded-full h-10 w-10 border-2 border-zinc-700 border-t-white mx-auto mb-6"></div>
@@ -172,10 +165,9 @@ export default function ClipBoost() {
                 </div>
               )}
 
-              {/* State C: Finished Output Render Ready to download */}
               {!rendering && videoUrl && (
                 <div className="w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
-                  <div className="aspect-[9/16] w-[210px] bg-black rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl relative group mb-4">
+                  <div className="aspect-[9/16] w-[220px] bg-black rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl relative mb-4">
                     <video 
                       src={videoUrl} 
                       className="w-full h-full object-cover" 
@@ -187,7 +179,7 @@ export default function ClipBoost() {
                   <a 
                     href={videoUrl} 
                     download="clipboost_render.mp4"
-                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/10 flex items-center gap-2"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm px-6 py-2.5 rounded-xl transition shadow-lg flex items-center gap-2"
                   >
                     📥 Download Rendered MP4
                   </a>
