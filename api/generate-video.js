@@ -35,4 +35,34 @@ export default async function handler(req, res) {
 
   try {
     // PHASE 1: FREE GROQ SCRIPT ENHANCEMENT
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions',
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${groqApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert viral content scriptwriter. 
+            Take the user's topic and create a concise, highly engaging 12-second narrative statement.
+            You must return a JSON object with exactly this key:
+            "scriptText": A single short string of the narration script (keep it under 35 words total).`
+          },
+          {
+            role: 'user',
+            content: `Topic: ${idea}`
+          }
+        ]
+      })
+    });
+
+    const groqData = await groqResponse.json();
+    if (!groqResponse.ok) {
+      throw new Error(`Groq AI Error: ${groqData.error?.message || groqResponse.statusText}`);
+    }
+
+    const aiContent = JSON.parse(groqData.choices[0].message
