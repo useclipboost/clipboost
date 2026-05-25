@@ -1,12 +1,11 @@
 // api/generate-video.js
 
-// This line forces Vercel to use the Edge Runtime, bypassing the 10-second timeout limit!
 export const config = {
   runtime: 'edge',
 };
 
 export default async function handler(req) {
-  // Handle CORS Preflight
+  // Handle CORS Preflight flags for your frontend
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
@@ -26,7 +25,12 @@ export default async function handler(req) {
   }
 
   try {
-    const { idea, voice } = await req.json();
+    const body = await req.json();
+    
+    // Grabs the input text from your form box safely
+    const idea = body.idea || body.videoPrompt || '';
+    const chosenVoice = body.voice || body.voiceSelection || 'adam';
+
     if (!idea) {
       return new Response(JSON.stringify({ error: 'Missing video concept prompt' }), {
         status: 400,
@@ -34,12 +38,12 @@ export default async function handler(req) {
       });
     }
 
-    let voiceId = 'pNInz6obpgmA5QDw6wpX'; // Adam
-    if (voice && voice.toLowerCase().includes('rachel')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+    // Assigns premium voice IDs based on your click selection
+    let voiceId = 'pNInz6obpgmA5QDw6wpX'; // Default: Adam Voice
+    if (chosenVoice.toLowerCase().includes('rachel')) {
+      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel Voice
     }
 
-    // Accessing environment variables in Edge runtime
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
     const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
@@ -51,7 +55,7 @@ export default async function handler(req) {
       });
     }
 
-    // PHASE 1: FREE GROQ SCRIPT ENHANCEMENT
+    // PHASE 1: CHAT COMPLETIONS VIA GROQ AI (FREE SCRIPTWRITER)
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -64,10 +68,7 @@ export default async function handler(req) {
         messages: [
           {
             role: 'system',
-            content: `You are an expert viral content scriptwriter. 
-            Take the user's topic and create a concise, highly engaging 12-second narrative statement.
-            You must return a JSON object with exactly this key:
-            "scriptText": A single short string of the narration script (keep it under 35 words total).`
+            content: `You are an expert viral content scriptwriter. Create a concise, engaging 12-second narrative statement. Return a JSON object with exactly this key: "scriptText" (keep under 35 words total).`
           },
           {
             role: 'user',
@@ -83,10 +84,9 @@ export default async function handler(req) {
     }
 
     const aiContent = JSON.parse(groqData.choices[0].message.content);
-    const enhancedScript = aiContent.scriptText;
-    const cleanText = enhancedScript.replace(/"/g, "'").replace(/\n/g, ' ').trim();
+    const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: ELEVENLABS AUDIO GENERATION
+    // PHASE 2: AUDIO STREAM GENERATION VIA ELEVENLABS
     const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
       method: 'POST',
       headers: {
@@ -105,12 +105,11 @@ export default async function handler(req) {
       throw new Error(`ElevenLabs TTS Failed with status: ${ttsResponse.status}`);
     }
 
-    // Convert binary stream to base64 using Edge-compatible tools
     const audioBuffer = await ttsResponse.arrayBuffer();
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
     const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
-    // PHASE 3: SHOTSTACK COMPILATION WITH AUDIO
+    // PHASE 3: COMPILATION ENGINE VIA SHOTSTACK
     const renderResponse = await fetch('https://api.shotstack.io/v1/render', {
       method: 'POST',
       headers: {
@@ -124,4 +123,53 @@ export default async function handler(req) {
             src: audioDataUrl,
             effect: 'fadeInOut'
           },
-          tracks:
+          tracks: [
+            {
+              clips: [
+                {
+                  asset: {
+                    type: 'html',
+                    html: `<p>${cleanText}</p>`,
+                    css: 'p { font-family: "Helvetica"; color: #ffffff; font-size: 26px; text-align: center; font-weight: bold; padding: 25px; line-height: 1.4; }',
+                    width: 600,
+                    height: 400
+                  },
+                  start: 0,
+                  length: 15,
+                  position: 'center'
+                }
+              ]
+            }
+          ]
+        },
+        output: {
+          format: 'mp4',
+          resolution: 'sd'
+        }
+      })
+    });
+
+    const renderData = await renderResponse.json();
+    if (!renderResponse.ok) {
+      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
+    }
+
+    const trackedId = renderData.response.id;
+
+    return new Response(JSON.stringify({
+      success: true,
+      renderId: trackedId,
+      id: trackedId,
+      response: { id: trackedId }
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+}
