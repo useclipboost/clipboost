@@ -20,18 +20,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    let systemVoice = 'Matthew'; 
+    // 🎙️ Premium, Ultra-Realistic ElevenLabs Voice IDs
+    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam (Deep Viral Male)
     if (chosenVoice.toLowerCase().includes('rachel') || chosenVoice.toLowerCase().includes('female')) {
-      systemVoice = 'Joanna'; 
+      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel (Natural Expressive Female)
     }
 
-    // ✅ SECURE HOOKS: Pulls straight from your Vercel Settings panel
+    // Pulling securely from your Vercel Environment Variables
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
+    const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
 
-    if (!shotstackKey || !groqApiKey) {
+    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
       return res.status(500).json({ 
-        error: 'System missing SHOTSTACK_API_KEY or OPENAI_API_KEY in Vercel settings.' 
+        error: 'Missing API keys (SHOTSTACK_API_KEY, OPENAI_API_KEY, or ELEVENLABS_API_KEY) in Vercel settings.' 
       });
     }
 
@@ -67,7 +69,34 @@ export default async function handler(req, res) {
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE
+    // PHASE 2: HYPER-REALISTIC AUDIO GENERATION VIA ELEVENLABS
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': elevenlabsKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: cleanText,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { 
+          stability: 0.40,        // Lowered slightly for more emotional inflection/realism
+          similarity_boost: 0.85  // Higher clarity
+        }
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      const ttsErr = await ttsResponse.text();
+      throw new Error(`ElevenLabs Premium TTS Failed: ${ttsErr || ttsResponse.status}`);
+    }
+
+    // Clean, web-compliant binary encoding that Shotstack won't reject
+    const audioBuffer = await ttsResponse.arrayBuffer();
+    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+
+    // PHASE 3: COMPILATION VIA SHOTSTACK PRODUCTION ENDPOINT
     const renderResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
@@ -97,9 +126,8 @@ export default async function handler(req, res) {
               clips: [
                 {
                   asset: {
-                    type: 'text-to-speech',
-                    text: cleanText,
-                    voice: systemVoice
+                    type: 'audio',
+                    src: audioDataUrl // ✅ Sending the clean human voice data stream
                   },
                   start: 0,
                   length: 12
