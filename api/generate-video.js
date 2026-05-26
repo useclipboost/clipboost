@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Set explicit headers for your frontend layout canvas
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,9 +26,8 @@ export default async function handler(req, res) {
       voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
     }
 
-    // 🔑 MATCHED TO YOUR EXACT VERCEL DASHBOARD ENVIRONMENT NAMES
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
-    const groqApiKey = process.env.OPENAI_API_KEY; // <-- Reads your exact key name from the image!
+    const groqApiKey = process.env.OPENAI_API_KEY; 
     const elevenlabsKey = process.env.ELEVENLABS_API_KEY || 'sk_eee72e5d46c0bd3ffb67f79e1f9be5d6f8787149172e71b6'; 
 
     if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
@@ -86,8 +84,11 @@ export default async function handler(req, res) {
       throw new Error(`ElevenLabs TTS Failed with status: ${ttsResponse.status}`);
     }
 
+    // ✅ REWRITTEN TO GENERATE A PERFECT WEB-COMPLIANT DATA URI STRING
     const audioBuffer = await ttsResponse.arrayBuffer();
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+    const base64Audio = btoa(
+      new Uint8Array(audioBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
     const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
     // PHASE 3: COMPILATION ENGINE VIA SHOTSTACK
