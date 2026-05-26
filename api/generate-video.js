@@ -11,9 +11,10 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.FAL_KEY) {
-      return res.status(500).json({ success: false, error: 'Missing FAL_KEY on Vercel dashboard.' });
+      return res.status(500).json({ success: false, error: 'Missing FAL_KEY variable environment configuration.' });
     }
 
+    // Connects straight to your real Fal.ai dashboard token pipeline!
     const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
       method: "POST",
       headers: {
@@ -22,8 +23,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         prompt: styleSelection === 'storytelling' 
-          ? `In an animated cartoon illustration style, ${videoPrompt}`
-          : `${videoPrompt}, high quality gameplay video style`,
+          ? `In an animated cartoon illustration art style, ${videoPrompt}`
+          : `${videoPrompt}, high quality video game engine footage, 4k layout cinematic style`,
         video_size: "landscape_16_9",
         duration: "5"
       }),
@@ -35,14 +36,14 @@ export default async function handler(req, res) {
     try {
       falData = JSON.parse(textResponse);
     } catch (e) {
-      return res.status(500).json({ success: false, error: 'Fal.ai returned an invalid response layer.' });
+      return res.status(500).json({ success: false, error: 'Fal.ai infrastructure returned an unreadable response format.' });
     }
 
     if (!falResponse.ok) {
-      return res.status(falResponse.status).json({ success: false, error: falData.detail || 'Fal.ai rejected request.' });
+      return res.status(falResponse.status).json({ success: false, error: falData.detail || 'Fal.ai credentials rejected.' });
     }
 
-    return res.status(200).json({ success: true, id: falData.request_id });
+    return res.status(200).json({ success: true, id: data.request_id || falData.request_id });
 
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
