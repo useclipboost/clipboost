@@ -21,7 +21,7 @@ export default function ClipBoost() {
     setStatusMessage('Submitting prompt layout to Shotstack...');
 
     try {
-      // Safely bundle voice selections into the body payload
+      // Bundles and ships selections safely down to the backend endpoint
       const response = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,10 +43,10 @@ export default function ClipBoost() {
         throw new Error('Critical Error: Server did not return a valid tracking identifier (renderId).');
       }
 
-      // Step 2: Client polling loop
+      // Step 2: Automated browser status polling loop
       let completedUrl = null;
       let attempts = 0;
-      const maxAttempts = 60; // 60 loops * 4 seconds = 240 seconds max timeout
+      const maxAttempts = 60; // 60 loops * 4 seconds = 240 seconds max padding timeout
 
       while (!completedUrl && attempts < maxAttempts) {
         setStatusMessage(`Rendering Pipeline Active... Cooking video frames (Check #${attempts + 1})`);
@@ -89,7 +89,7 @@ export default function ClipBoost() {
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-        {/* Controls Panel */}
+        {/* Left Side: Control UI Dashboard */}
         <div style={{ backgroundColor: '#1f2833', padding: '30px', borderRadius: '12px' }}>
           <h2 style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>🎬 AI Video Generation Engine</h2>
           
@@ -102,4 +102,67 @@ export default function ClipBoost() {
           />
 
           <label style={{ display: 'block', fontSize: '12px', color: '#c5a059', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>Target Platform</label>
-          <div style={{ display: 'grid', gridTemplateColumns:
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {['TikTok Short', 'YT Shorts', 'IG Reels'].map((platform) => (
+              <button key={platform} onClick={() => setTargetPlatform(platform)} style={{ padding: '12px', backgroundColor: targetPlatform === platform ? '#fff' : '#0b0c10', color: targetPlatform === platform ? '#000' : '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}>{platform}</button>
+            ))}
+          </div>
+
+          <label style={{ display: 'block', fontSize: '12px', color: '#c5a059', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>AI Narrator Voice</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '30px' }}>
+            {['Adam (Deep Viral Male)', 'Rachel (Energetic Female)'].map((voice) => (
+              <button key={voice} onClick={() => setNarratorVoice(voice)} style={{ padding: '12px', backgroundColor: narratorVoice === voice ? '#222' : '#0b0c10', color: '#fff', border: narratorVoice === voice ? '1px solid #45f3ff' : 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>{voice}</button>
+            ))}
+          </div>
+
+          <button 
+            onClick={handleGenerate}
+            disabled={loading}
+            style={{ width: '100%', padding: '16px', backgroundColor: loading ? '#444' : '#fff', color: '#000', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', transition: '0.2s' }}
+          >
+            {loading ? 'Processing Assets...' : '✨ Generate Short Video (1 Credit)'}
+          </button>
+
+          {error && (
+            <div style={{ marginTop: '20px', padding: '12px', backgroundColor: 'rgba(255, 0, 0, 0.1)', border: '1px solid #ff4d4d', borderRadius: '6px', color: '#ff4d4d', fontSize: '14px' }}>
+              Pipeline error: {error}
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Media Live Streaming Preview Container */}
+        <div style={{ backgroundColor: '#1f2833', padding: '30px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ border: '4px solid rgba(255,255,255,0.1)', width: '48px', height: '48px', borderRadius: '50%', borderLeftColor: '#45f3ff', animation: 'spin 1s linear infinite', margin: '0 auto 20px auto' }} />
+              <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>Rendering Pipeline Active</h3>
+              <p style={{ margin: 0, color: '#aaa', fontSize: '14px' }}>{statusMessage}</p>
+            </div>
+          ) : videoUrl ? (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+              <video 
+                src={videoUrl} 
+                controls 
+                style={{ width: '100%', maxHeight: '420px', borderRadius: '8px', backgroundColor: '#000', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+              />
+              <a 
+                href={videoUrl} 
+                download="clipboost-generation.mp4" 
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: '#2ecc71', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', transition: '0.2s' }}
+              >
+                📥 Download Rendered MP4
+              </a>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: '#666' }}>
+              <p style={{ margin: 0, fontSize: '15px' }}>Your rendered video preview will appear here inside a live streaming canvas container.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
