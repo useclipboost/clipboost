@@ -1,5 +1,6 @@
+// Native Node.js compliant handler (No Edge runtime conflicts)
 export default async function handler(req, res) {
-  // 1. Handle CORS Preflight flags natively
+  // Set clean, explicit CORS headers natively
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -14,7 +15,6 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    
     const idea = body.idea || body.videoPrompt || '';
     const chosenVoice = body.voice || body.voiceSelection || 'adam';
 
@@ -22,20 +22,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    // Officially verified ElevenLabs pre-made system voice IDs
-    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Default: Adam Voice (Deep Male)
+    // ElevenLabs system voice IDs
+    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam
     if (chosenVoice.toLowerCase().includes('rachel')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel Voice (Energetic Female)
+      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
     }
 
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
-    
-    // SMART FALLBACK: Tries Vercel variables, then hardcoded fallback string
     const elevenlabsKey = 
       process.env.ELEVENLABS_API_KEY || 
       process.env.ELEVEN_LABS_KEY || 
-      process.env.elevenlabs_api_key ||
       'sk_eee72e5d46c0bd3ffb67f79e1f9be5d6f8787149172e71b6'; 
 
     if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
@@ -51,4 +48,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
-        response_format: { type: "
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert viral content scriptwriter. Create a concise, engaging 12-second narrative statement. Return a JSON object with exactly this key: "scriptText" (keep under 30 words total).'
+          },
+          {
+            role: 'user',
+            content: `Topic: ${idea}`
+          }
+        ]
+      })
