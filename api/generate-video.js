@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     if (!process.env.FAL_KEY) {
       return res.status(500).json({ 
         success: false, 
-        error: 'Missing FAL_KEY environment variable on the host dashboard.' 
+        error: 'Missing FAL_KEY environment variable on the Vercel dashboard.' 
       });
     }
 
