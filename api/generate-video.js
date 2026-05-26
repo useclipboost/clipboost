@@ -25,7 +25,6 @@ export default async function handler(req, res) {
       systemVoice = 'Joanna'; 
     }
 
-    // ✅ SECURE HOOKS: Pulls straight from your Vercel Settings panel
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
 
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE
+    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE (WITH VIDEO BACKGROUND)
     const renderResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
@@ -76,17 +75,32 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         timeline: {
-          background: '#1a1a2e',
+          background: '#000000',
           tracks: [
             {
+              // Track 1: Subtitle Overlay
               clips: [
                 {
                   asset: {
                     type: 'html',
                     html: `<p align="center">${cleanText}</p>`,
-                    css: 'p { font-family: "Helvetica Neue", Arial; font-size: 28px; color: #ffffff; font-weight: bold; text-align: center; }',
+                    css: 'p { font-family: "Helvetica Neue", Arial; font-size: 28px; color: #ffffff; font-weight: bold; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }',
                     width: 600,
                     height: 200
+                  },
+                  start: 0,
+                  length: 12,
+                  position: 'center'
+                }
+              ]
+            },
+            {
+              // Track 2: Moving Cinematic Space Background Video Asset
+              clips: [
+                {
+                  asset: {
+                    type: 'video',
+                    src: 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/earth.mp4'
                   },
                   start: 0,
                   length: 12
@@ -94,6 +108,7 @@ export default async function handler(req, res) {
               ]
             },
             {
+              // Track 3: Native Text-to-Speech Audio
               clips: [
                 {
                   asset: {
