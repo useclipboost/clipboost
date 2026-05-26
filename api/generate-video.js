@@ -7,14 +7,11 @@ export default async function handler(req, res) {
     const { videoPrompt, styleSelection } = req.body;
 
     if (!videoPrompt || !videoPrompt.trim()) {
-      return res.status(400).json({ success: false, error: 'A video description prompt is required.' });
+      return res.status(400).json({ success: false, error: 'A video prompt is required.' });
     }
 
     if (!process.env.FAL_KEY) {
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Missing FAL_KEY environment variable on the Vercel dashboard.' 
-      });
+      return res.status(500).json({ success: false, error: 'Missing FAL_KEY on Vercel dashboard.' });
     }
 
     const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
@@ -38,26 +35,16 @@ export default async function handler(req, res) {
     try {
       falData = JSON.parse(textResponse);
     } catch (e) {
-      return res.status(500).json({ 
-        success: false, 
-        error: `Fal.ai returned an invalid response layer: ${textResponse.substring(0, 100)}` 
-      });
+      return res.status(500).json({ success: false, error: 'Fal.ai returned an invalid response layer.' });
     }
 
     if (!falResponse.ok) {
-      return res.status(falResponse.status).json({ 
-        success: false, 
-        error: falData.detail || 'Fal.ai endpoint pipeline rejected your generation request.' 
-      });
+      return res.status(falResponse.status).json({ success: false, error: falData.detail || 'Fal.ai rejected request.' });
     }
 
-    return res.status(200).json({
-      success: true,
-      id: falData.request_id,
-      message: 'Generation pipeline successfully initiated.'
-    });
+    return res.status(200).json({ success: true, id: falData.request_id });
 
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
