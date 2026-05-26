@@ -23,6 +23,7 @@ export default async function handler(req, res) {
 
     if (data.status === 'COMPLETED') {
       formattedResponse.response.status = 'done';
+      // Fallback matrix to grab the video URL from Fal's dynamic output format
       formattedResponse.response.url = data.logs || data.video?.url || (data.outputs && data.outputs[0]?.file?.url);
     } else if (data.status === 'FAILED') {
       formattedResponse.response.status = 'failed';
