@@ -60,3 +60,101 @@ export default async function handler(req, res) {
           }
         ]
       })
+    });
+
+    if (!groqResponse.ok) {
+      const errText = await groqResponse.text();
+      throw new Error(`Groq AI Error: ${errText || groqResponse.statusText}`);
+    }
+
+    const groqData = await groqResponse.json();
+    const aiContent = JSON.parse(groqData.choices[0].message.content);
+    const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
+
+    // PHASE 2: AUDIO GENERATION VIA ELEVENLABS
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': elevenlabsKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: cleanText,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      throw new Error(`ElevenLabs TTS Failed with status: ${ttsResponse.status}`);
+    }
+
+    const audioBuffer = await ttsResponse.arrayBuffer();
+    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+
+    // PHASE 3: COMPILATION ENGINE VIA SHOTSTACK
+    const renderResponse = await fetch('https://api.shotstack.io/v1/render', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': shotstackKey
+      },
+      body: JSON.stringify({
+        timeline: {
+          background: '#1a1a2e',
+          tracks: [
+            {
+              clips: [
+                {
+                  asset: {
+                    type: 'text',
+                    text: cleanText,
+                    style: 'vlog',
+                    size: 'medium',
+                    color: '#ffffff'
+                  },
+                  start: 0,
+                  length: 12,
+                  position: 'center'
+                }
+              ]
+            },
+            {
+              clips: [
+                {
+                  asset: {
+                    type: 'audio',
+                    src: audioDataUrl
+                  },
+                  start: 0,
+                  length: 12
+                }
+              ]
+            }
+          ]
+        },
+        output: {
+          format: 'mp4',
+          resolution: 'sd'
+        }
+      })
+    });
+
+    const renderData = await renderResponse.json();
+    if (!renderResponse.ok) {
+      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      renderId: renderData.response.id,
+      id: renderData.response.id,
+      response: { id: renderData.response.id }
+    });
+
+  } catch (error) {
+    // Return standard JSON error format so the frontend never struggles to parse text
+    return res.status(500).json({ error: error.message });
+  }
+}
