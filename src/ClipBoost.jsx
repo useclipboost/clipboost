@@ -9,7 +9,7 @@ export default function ClipBoost() {
   const [statusText, setStatusText] = useState('System Idle');
   const [videoUrl, setVideoUrl] = useState(null);
 
-  const handleGenerate = async (e) => {
+  const handleGenerate = (e) => {
     e.preventDefault();
     if (!prompt.trim()) {
       alert('Please enter a description first!');
@@ -18,53 +18,14 @@ export default function ClipBoost() {
 
     setLoading(true);
     setVideoUrl(null);
-    setStatusText('Processing Pipeline...');
+    setStatusText('Processing Pipeline (Saga.AI Sandbox Mode)...');
 
-    try {
-      const response = await fetch('/api/generate-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoPrompt: prompt,
-          styleSelection: style,
-          voiceSelection: voice
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Pipeline error');
-      }
-
-      setStatusText('Rendering Video...');
-      pollStatus(data.id);
-    } catch (err) {
-      alert('Error: ' + err.message);
+    // Simulated response for Netlify preview layout
+    setTimeout(() => {
+      setStatusText('Render Complete');
       setLoading(false);
-      setStatusText('System Idle');
-    }
-  };
-
-  const pollStatus = (renderId) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/check-status?id=${renderId}`);
-        const data = await res.json();
-
-        if (data.response && data.response.status === 'done') {
-          clearInterval(interval);
-          setVideoUrl(data.response.url);
-          setLoading(false);
-          setStatusText('Render Complete');
-        } else if (data.response && data.response.status === 'failed') {
-          clearInterval(interval);
-          alert('Render failed.');
-          setLoading(false);
-          setStatusText('System Idle');
-        }
-      } catch (e) {
-        clearInterval(interval);
-      }
+      // Fallback placeholder video to test interface behavior
+      setVideoUrl('https://www.w3schools.com/html/mov_bbb.mp4');
     }, 3000);
   };
 
@@ -73,7 +34,7 @@ export default function ClipBoost() {
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 bg-gradient-to-tr from-indigo-500 to-emerald-400 rounded-xl flex items-center justify-center font-bold text-black text-lg">
-            C
+            S
           </div>
           <span className="text-lg font-bold tracking-tight text-white uppercase">Saga.AI</span>
         </div>
@@ -101,7 +62,7 @@ export default function ClipBoost() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-3xl w-full mx-auto">
         <h1 className="text-3xl lg:text-4xl font-medium tracking-tight text-slate-200 text-center mb-8">
-          {activeTab === 'video' ? 'What will you create?' : 'Create stunning images'}
+          {activeTab === 'video' ? 'What will you create with Saga.AI?' : 'Create stunning images'}
         </h1>
         <div className="w-full bg-[#0d0d16] rounded-2xl border border-white/5 p-6 shadow-2xl flex flex-col">
           <textarea
@@ -109,7 +70,7 @@ export default function ClipBoost() {
             onChange={(e) => setPrompt(e.target.value)}
             disabled={loading}
             className="w-full h-36 bg-transparent text-slate-200 placeholder-slate-600 text-base outline-none resize-none font-medium leading-relaxed"
-            placeholder={activeTab === 'video' ? "Describe the video concept you want to generate..." : "Describe the stunning layout image you want to create..."}
+            placeholder={activeTab === 'video' ? "Describe the video concept you want Saga.AI to generate..." : "Describe the stunning layout image you want to create..."}
           />
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
             {activeTab === 'video' ? (
