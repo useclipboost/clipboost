@@ -10,13 +10,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'A video description prompt is required.' });
     }
 
-    console.log(`Sending prompt to Fal.ai using style: ${styleSelection}`);
+    if (!process.env.FAL_KEY) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Missing FAL_KEY environment variable on the host dashboard.' 
+      });
+    }
 
-    // 🌟 REAL AUTOMATION FLOW: Call Fal.ai directly using your environment key
     const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
       method: "POST",
       headers: {
-        "Authorization": `Key ${process.env.FAL_KEY}`, // Uses your hidden token safely
+        "Authorization": `Key ${process.env.FAL_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -28,12 +32,32 @@ export default async function handler(req, res) {
       }),
     });
 
-    const falData = await falResponse.json();
-
-    if (!falResponse.ok) {
-      throw new Error(falData.detail || 'Fal.ai queue request rejected.');
+    const textResponse = await falResponse.text();
+    let falData;
+    
+    try {
+      falData = JSON.parse(textResponse);
+    } catch (e) {
+      return res.status(500).json({ 
+        success: false, 
+        error: `Fal.ai returned an invalid response layer: ${textResponse.substring(0, 100)}` 
+      });
     }
 
-    // Pass the real tracking request down to your polling mechanism
+    if (!falResponse.ok) {
+      return res.status(falResponse.status).json({ 
+        success: false, 
+        error: falData.detail || 'Fal.ai endpoint pipeline rejected your generation request.' 
+      });
+    }
+
     return res.status(200).json({
       success: true,
+      id: falData.request_id,
+      message: 'Generation pipeline successfully initiated.'
+    });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message || 'Internal Server Error' });
+  }
+}
