@@ -15,26 +15,29 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const idea = body.idea || body.videoPrompt || '';
     const chosenVoice = body.voice || body.voiceSelection || 'adam';
+    // 🎭 Capture user choice: 'gameplay' or 'storytelling'
+    const videoStyle = body.styleSelection || 'gameplay'; 
 
     if (!idea) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    let systemVoice = 'Matthew'; 
+    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam (Deep Viral Narration)
     if (chosenVoice.toLowerCase().includes('rachel') || chosenVoice.toLowerCase().includes('female')) {
-      systemVoice = 'Joanna'; 
+      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
     }
 
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
+    const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
 
-    if (!shotstackKey || !groqApiKey) {
+    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
       return res.status(500).json({ 
-        error: 'System missing SHOTSTACK_API_KEY or OPENAI_API_KEY in Vercel settings.' 
+        error: 'Missing required API keys in environment configurations.' 
       });
     }
 
-    // PHASE 1: RETENTION HOOK & SCRIPT GENERATION VIA GROQ AI
+    // STEP 1: GENERATE PUNCHY MULTI-SEGMENT SCRIPT VIA GROQ AI
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -44,22 +47,4 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         response_format: { type: "json_object" },
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a viral video script editor. Write a 12-second dramatic narration script split into exactly 3 punchy sentences: "hookText" (seconds 0-4), "bodyText" (seconds 4-8), and "payoffText" (seconds 8-12). Keep each sentence under 7 words. Return a JSON object with exactly those 3 keys.'
-          },
-          {
-            role: 'user',
-            content: `Topic: ${idea}`
-          }
-        ]
-      })
-    });
-
-    if (!groqResponse.ok) {
-      const errText = await groqResponse.text();
-      throw new Error(`Groq AI Error: ${errText || groqResponse.statusText}`);
-    }
-
-    const
+        messages:
