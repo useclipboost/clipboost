@@ -14,7 +14,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, error: 'Missing FAL_KEY variable environment configuration.' });
     }
 
-    // Connects straight to your real Fal.ai dashboard token pipeline!
     const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
       method: "POST",
       headers: {
@@ -43,7 +42,7 @@ export default async function handler(req, res) {
       return res.status(falResponse.status).json({ success: false, error: falData.detail || 'Fal.ai credentials rejected.' });
     }
 
-    return res.status(200).json({ success: true, id: data.request_id || falData.request_id });
+    return res.status(200).json({ success: true, id: falData.request_id });
 
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
