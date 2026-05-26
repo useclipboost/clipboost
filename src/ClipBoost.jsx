@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 
 export default function ClipBoost() {
-  // Active sub-section state engine
   const [activeTab, setActiveTab] = useState('video');
-  
-  // Pipeline management data variables
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('storytelling');
   const [voice, setVoice] = useState('adam');
@@ -13,15 +10,15 @@ export default function ClipBoost() {
   const [videoUrl, setVideoUrl] = useState(null);
 
   const handleGenerate = async (e) => {
-    e.preventDefault(); // Prevents layout freezing on submit click
+    e.preventDefault();
     if (!prompt.trim()) {
-      alert('Please enter a description concept first!');
+      alert('Please enter a description first!');
       return;
     }
 
     setLoading(true);
     setVideoUrl(null);
-    setStatusText('Synthesizing Pipeline...');
+    setStatusText('Processing Pipeline...');
 
     try {
       const response = await fetch('/api/generate-video', {
@@ -36,11 +33,11 @@ export default function ClipBoost() {
 
       const data = await response.json();
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Server rejected request layout.');
+        throw new Error(data.error || 'Pipeline error');
       }
 
-      setStatusText('Rendering MP4...');
-      pollShotstackStatus(data.id);
+      setStatusText('Rendering Video...');
+      pollStatus(data.id);
     } catch (err) {
       alert('Error: ' + err.message);
       setLoading(false);
@@ -48,12 +45,10 @@ export default function ClipBoost() {
     }
   };
 
-  const pollShotstackStatus = (renderId) => {
+  const pollStatus = (renderId) => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`https://api.shotstack.io/edit/v1/render/${renderId}`, {
-          headers: { 'x-api-key': import.meta.env.VITE_SHOTSTACK_API_KEY || '' }
-        });
+        const res = await fetch(`/api/check-status?id=${renderId}`);
         const data = await res.json();
 
         if (data.response && data.response.status === 'done') {
@@ -63,7 +58,7 @@ export default function ClipBoost() {
           setStatusText('Render Complete');
         } else if (data.response && data.response.status === 'failed') {
           clearInterval(interval);
-          alert('Rendering failed.');
+          alert('Render failed.');
           setLoading(false);
           setStatusText('System Idle');
         }
@@ -74,25 +69,27 @@ export default function ClipBoost() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#07070a] text-slate-100 flex flex-col z-10 relative selection:bg-indigo-500/30">
+    <div style={{ backgroundColor: '#07070a', minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 🌍 GLOBAL NAVIGATION RAIL (Perfectly matches image layout positions) */}
-      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between pointer-events-auto">
+      {/* 🌍 TOP BRAND NAVIGATION BAR */}
+      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 bg-gradient-to-tr from-indigo-500 to-emerald-400 rounded-xl flex items-center justify-center font-bold text-black text-lg">S</div>
-          <span className="text-lg font-bold tracking-tight text-white">STUDIO.AI</span>
+          <div className="h-9 w-9 bg-gradient-to-tr from-indigo-500 to-emerald-400 rounded-xl flex items-center justify-center font-bold text-black text-lg">
+            S
+          </div>
+          <span className="text-lg font-bold tracking-tight text-white uppercase">Saga.AI</span>
         </div>
         
-        {/* Dynamic Nav Toggles */}
-        <nav className="flex items-center gap-1 bg-[#12121f] p-1 rounded-full border border-white/5 shadow-inner">
+        {/* Clickable Nav Toggles */}
+        <nav className="flex items-center gap-1 bg-[#12121f] p-1 rounded-full border border-white/5">
           {['video', 'image', 'tools', 'assets'].map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 capitalize cursor-pointer z-20 ${
+              className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all capitalize cursor-pointer ${
                 activeTab === tab 
-                  ? 'bg-white/10 text-white shadow-sm border border-white/5' 
+                  ? 'bg-white/10 text-white border border-white/5 shadow-sm' 
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -109,33 +106,32 @@ export default function ClipBoost() {
         </div>
       </header>
 
-      {/* 🔮 CENTERED SUITE CONTROLLER */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-4xl w-full mx-auto relative z-20">
+      {/* 🔮 CENTERED MAIN CREATION SUITE CARD */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-3xl w-full mx-auto">
         
-        {/* Title Presentation Headers */}
-        <h1 className="text-4xl lg:text-5xl font-medium tracking-tight text-slate-300 text-center mb-8">
+        {/* Dynamic Context Headers */}
+        <h1 className="text-3xl lg:text-4xl font-medium tracking-tight text-slate-200 text-center mb-8">
           {activeTab === 'video' ? 'What will you create?' : 'Create stunning images'}
         </h1>
 
-        {/* The Workspace Frame */}
-        <div className="w-full bg-[#0d0d16] rounded-2xl border border-white/5 p-5 shadow-2xl flex flex-col pointer-events-auto">
+        {/* The Workspace Interface Frame Box */}
+        <div className="w-full bg-[#0d0d16] rounded-2xl border border-white/5 p-6 shadow-2xl flex flex-col">
           
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             disabled={loading}
-            className="w-full h-40 bg-transparent text-slate-200 placeholder-slate-600 text-base outline-none resize-none font-medium leading-relaxed z-30"
+            className="w-full h-36 bg-transparent text-slate-200 placeholder-slate-600 text-base outline-none resize-none font-medium leading-relaxed"
             placeholder={
               activeTab === 'video' 
-                ? "A serene sunset over the ocean with gentle waves crashing"
-                : "An underwater palace with bioluminescent coral"
+                ? "Describe the video concept you want to generate (e.g., A historic discovery found deep beneath the mountains...)"
+                : "Describe the stunning layout image you want to create..."
             }
           />
 
-          {/* Bottom Settings Sub-Section Bar */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5 z-30">
+          {/* Settings and Actions Footer Panel Bar */}
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
             
-            {/* Context Parameter Switches */}
             {activeTab === 'video' ? (
               <div className="flex gap-2">
                 <select
@@ -143,39 +139,38 @@ export default function ClipBoost() {
                   onChange={(e) => setStyle(e.target.value)}
                   className="bg-[#141424] text-xs font-semibold px-3 py-2 rounded-xl border border-white/10 text-slate-300 outline-none cursor-pointer"
                 >
-                  <option value="storytelling">🎨 Style: Cartoon Story</option>
-                  <option value="gameplay">🎮 Style: Gameplay Split</option>
+                  <option value="storytelling">🎨 AI Storytelling Cartoon</option>
+                  <option value="gameplay">🎮 Viral Gameplay Split</option>
                 </select>
                 <select
                   value={voice}
                   onChange={(e) => setVoice(e.target.value)}
                   className="bg-[#141424] text-xs font-semibold px-3 py-2 rounded-xl border border-white/10 text-slate-300 outline-none cursor-pointer"
                 >
-                  <option value="adam">🎙️ Voice: Adam (Male)</option>
+                  <option value="adam">🎙️ Voice: Adam (Deep Male)</option>
                   <option value="rachel">🎙️ Voice: Rachel (Female)</option>
                 </select>
               </div>
             ) : (
               <div className="text-xs text-slate-500 font-medium">
-                Running Fast SDXL Image Model Engine
+                Fast Generation SDXL Core Engine Active
               </div>
             )}
 
-            {/* Action Trigger Buttons */}
             <button
               type="button"
               onClick={handleGenerate}
               disabled={loading}
-              className="bg-[#e2e8f0] hover:bg-white text-black font-semibold text-sm px-6 py-2 rounded-full transition-all duration-150 disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer shadow-md z-30"
+              className="bg-[#e2e8f0] hover:bg-white text-black font-bold text-sm px-6 py-2 rounded-full transition-all disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer shadow-md"
             >
               {loading ? 'Processing...' : 'Generate'}
             </button>
           </div>
         </div>
 
-        {/* 🎬 PREVIEW MONITOR DECK (Appears below workspace dynamically when compiling) */}
+        {/* 🎬 PREVIEW VIEWPORT (Renders directly underneath the main box) */}
         {(loading || videoUrl) && (
-          <div className="w-full max-w-xs mt-8 bg-[#0d0d16] rounded-2xl border border-white/5 p-4 flex flex-col items-center">
+          <div className="w-full max-w-xs mt-8 bg-[#0d0d16] rounded-2xl border border-white/5 p-4 flex flex-col items-center shadow-2xl">
             <p className="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">
               {statusText}
             </p>
