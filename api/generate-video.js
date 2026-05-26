@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.FAL_KEY) {
-      return res.status(500).json({ success: false, error: 'Missing FAL_KEY variable environment configuration.' });
+      return res.status(500).json({ success: false, error: 'Missing FAL_KEY configuration on Vercel.' });
     }
 
     const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
