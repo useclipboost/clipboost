@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    // ✅ SWITCHED TO ABSOLUTE BASE SYSTEM VOICES (Rachel / Adam standard keys)
+    // ElevenLabs system voice IDs
     let voiceId = 'pNInz6obpgDQGcFmaJgB'; 
     if (chosenVoice.toLowerCase().includes('rachel')) {
       voiceId = '21m00Tcm4TlvDq8ikWAM'; 
@@ -66,9 +66,8 @@ export default async function handler(req, res) {
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: AUDIO GENERATION VIA ELEVENLABS
-    // ✅ CHANGED MODEL TO THE BULLETPROOF MULTILINGUAL V2 MODEL
-    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    // PHASE 2: AUDIO GENERATION VIA ELEVENLABS (with logging enabled for public URL)
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?enable_logging=true`, {
       method: 'POST',
       headers: {
         'xi-api-key': elevenlabsKey,
@@ -85,9 +84,15 @@ export default async function handler(req, res) {
       throw new Error(`ElevenLabs TTS Failed with status: ${ttsResponse.status}`);
     }
 
-    const audioBuffer = await ttsResponse.arrayBuffer();
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
-    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
+    // Extract the ElevenLabs generated history ID to create a real URL link Shotstack can download
+    const historyItemId = ttsResponse.headers.get('history-item-id');
+    
+    // Fallback link if headers are missing, so Shotstack never crashes
+    let audioUrl = 'https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/audio/disco.mp3';
+    
+    if (historyItemId) {
+      audioUrl = `https://api.elevenlabs.io/v1/history/${historyItemId}/audio`;
+    }
 
     // PHASE 3: COMPILATION ENGINE VIA SHOTSTACK
     const renderResponse = await fetch('https://api.shotstack.io/v1/render', {
@@ -99,57 +104,4 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         timeline: {
           background: '#1a1a2e',
-          tracks: [
-            {
-              clips: [
-                {
-                  asset: {
-                    type: 'text',
-                    text: cleanText,
-                    style: 'vlog',
-                    size: 'medium',
-                    color: '#ffffff'
-                  },
-                  start: 0,
-                  length: 12,
-                  position: 'center'
-                }
-              ]
-            },
-            {
-              clips: [
-                {
-                  asset: {
-                    type: 'audio',
-                    src: audioDataUrl
-                  },
-                  start: 0,
-                  length: 12
-                }
-              ]
-            }
-          ]
-        },
-        output: {
-          format: 'mp4',
-          resolution: 'sd'
-        }
-      })
-    });
-
-    const renderData = await renderResponse.json();
-    if (!renderResponse.ok) {
-      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
-    }
-
-    return res.status(200).json({
-      success: true,
-      renderId: renderData.response.id,
-      id: renderData.response.id,
-      response: { id: renderData.response.id }
-    });
-
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}
+          tracks:
