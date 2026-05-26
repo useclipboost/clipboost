@@ -1,9 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Saga from './Saga.jsx'
+import ClipBoost from './ClipBoost.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Saga />
+    <ClipBoost />
   </React.StrictMode>,
 )
