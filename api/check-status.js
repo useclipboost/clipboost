@@ -17,7 +17,6 @@ export default async function handler(req, res) {
 
     if (data.status === 'COMPLETED') {
       formattedResponse.response.status = 'done';
-      // Pulls video asset tracking layer links cleanly
       formattedResponse.response.url = data.video?.url || (data.outputs && data.outputs[0]?.file?.url) || data.logs;
     } else if (data.status === 'FAILED') {
       formattedResponse.response.status = 'failed';
