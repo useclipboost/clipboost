@@ -1,11 +1,7 @@
-// api/check-status.js
-
 export default async function handler(req, res) {
-  // Allow the frontend to check status across domains if needed
-  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -13,26 +9,31 @@ export default async function handler(req, res) {
 
   const { id } = req.query;
   if (!id) {
-    return res.status(400).json({ error: 'Missing tracker id parameter.' });
-  }
-
-  const apiKey = process.env.SHOTSTACK_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'API Key configuration missing.' });
+    return res.status(400).json({ error: 'Missing render ID parameter.' });
   }
 
   try {
-    const response = await fetch(`https://api.shotstack.io/v1/render/${id}`, {
+    // ✅ SECURE HOOK: Pulls your Shotstack production key safely from Vercel
+    const shotstackKey = process.env.SHOTSTACK_API_KEY; 
+    
+    const response = await fetch(`https://api.shotstack.io/edit/v1/render/${id}`, {
       method: 'GET',
-      headers: { 'x-api-key': apiKey }
+      headers: {
+        'x-api-key': shotstackKey
+      }
     });
 
     const data = await response.json();
-    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch status from Shotstack.');
+    }
+
     return res.status(200).json({
-      status: data.response?.status, // Will return 'queued', 'rendering', or 'done'
-      url: data.response?.url || null
+      status: data.response.status,
+      url: data.response.url,
+      error: data.response.error
     });
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
