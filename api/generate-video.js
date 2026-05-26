@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // PHASE 1: SCRIPT GENERATION VIA GROQ AI
+    // PHASE 1: VIRAL HOOK & THREE-ACT SCRIPTWRITING VIA GROQ AI
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert viral content scriptwriter. Create a concise, engaging 12-second narrative statement. Return a JSON object with exactly this key: "scriptText" (keep under 30 words total).'
+            content: 'You are a viral TikTok & Reels editor. Write a short 12-second narrative script broken into 3 punchy sentences: 1. A crazy hook (seconds 0-4), 2. An escalating detail (seconds 4-8), 3. A dramatic retention payoff (seconds 8-12). Return a JSON object with exactly these keys: "hookText", "bodyText", "payoffText". Keep each sentence under 8 words.'
           },
           {
             role: 'user',
@@ -58,15 +58,26 @@ export default async function handler(req, res) {
     });
 
     if (!groqResponse.ok) {
-      const errText = await groqResponse.text();
-      throw new Error(`Groq AI Error: ${errText || groqResponse.statusText}`);
+      throw new Error('Groq failed to generate your retention hook script.');
     }
 
     const groqData = await groqResponse.json();
     const aiContent = JSON.parse(groqData.choices[0].message.content);
-    const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
+    
+    const hook = aiContent.hookText.replace(/"/g, "'").trim();
+    const middle = aiContent.bodyText.replace(/"/g, "'").trim();
+    const payoff = aiContent.payoffText.replace(/"/g, "'").trim();
+    const fullCombinedText = `${hook} ${middle} ${payoff}`;
 
-    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE (WITH VIDEO BACKGROUND)
+    // PHASE 2: SELECTION OF CINEMATIC SCENE ASSETS (Using curated high-retention clips)
+    // Scene 1 Hook: Mysterious deep space/atmosphere
+    const videoScene1 = 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/earth.mp4';
+    // Scene 2 Body: Abstract grid/technology overlay matrix
+    const videoScene2 = 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/grid.mp4';
+    // Scene 3 Payoff: Cinematic ocean deep pull-back
+    const videoScene3 = 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/ocean.mp4';
+
+    // PHASE 3: COMPILATION VIA THE MULTI-TRACK RETENTION PIPELINE
     const renderResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
@@ -78,42 +89,73 @@ export default async function handler(req, res) {
           background: '#000000',
           tracks: [
             {
-              // Track 1: Subtitle Overlay
+              // TRACK 1: DYNAMIC SUBTITLE CAPTIONS TIMED TO EACH SCENE
               clips: [
                 {
                   asset: {
                     type: 'html',
-                    html: `<p align="center">${cleanText}</p>`,
-                    css: 'p { font-family: "Helvetica Neue", Arial; font-size: 28px; color: #ffffff; font-weight: bold; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }',
-                    width: 600,
-                    height: 200
+                    html: `<p align="center">${hook}</p>`,
+                    css: 'p { font-family: "Impact", Arial; font-size: 32px; color: #ffeb3b; text-transform: uppercase; text-align: center; text-shadow: 3px 3px 0px #000000; }',
+                    width: 550,
+                    height: 150
                   },
                   start: 0,
-                  length: 12,
+                  length: 4,
+                  position: 'center'
+                },
+                {
+                  asset: {
+                    type: 'html',
+                    html: `<p align="center">${middle}</p>`,
+                    css: 'p { font-family: "Impact", Arial; font-size: 32px; color: #ffffff; text-transform: uppercase; text-align: center; text-shadow: 3px 3px 0px #000000; }',
+                    width: 550,
+                    height: 150
+                  },
+                  start: 4,
+                  length: 4,
+                  position: 'center'
+                },
+                {
+                  asset: {
+                    type: 'html',
+                    html: `<p align="center">${payoff}</p>`,
+                    css: 'p { font-family: "Impact", Arial; font-size: 34px; color: #00e676; text-transform: uppercase; text-align: center; text-shadow: 3px 3px 0px #000000; }',
+                    width: 550,
+                    height: 150
+                  },
+                  start: 8,
+                  length: 4,
                   position: 'center'
                 }
               ]
             },
             {
-              // Track 2: Moving Cinematic Space Background Video Asset
+              // TRACK 2: RAPID VISUAL SCENE CUTS (B-Roll switching every 4 seconds)
               clips: [
                 {
-                  asset: {
-                    type: 'video',
-                    src: 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/earth.mp4'
-                  },
+                  asset: { type: 'video', src: videoScene1 },
                   start: 0,
-                  length: 12
+                  length: 4
+                },
+                {
+                  asset: { type: 'video', src: videoScene2 },
+                  start: 4,
+                  length: 4
+                },
+                {
+                  asset: { type: 'video', src: videoScene3 },
+                  start: 8,
+                  length: 4
                 }
               ]
             },
             {
-              // Track 3: Native Text-to-Speech Audio
+              // TRACK 3: CONTINUOUS VOICE OVER
               clips: [
                 {
                   asset: {
                     type: 'text-to-speech',
-                    text: cleanText,
+                    text: fullCombinedText,
                     voice: systemVoice
                   },
                   start: 0,
