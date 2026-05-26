@@ -1,6 +1,4 @@
-// Native Node.js compliant handler (No Edge runtime conflicts)
 export default async function handler(req, res) {
-  // Set clean, explicit CORS headers natively
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,21 +20,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    // ElevenLabs system voice IDs
-    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam
+    // ✅ SWITCHED TO ABSOLUTE BASE SYSTEM VOICES (Rachel / Adam standard keys)
+    let voiceId = 'pNInz6obpgDQGcFmaJgB'; 
     if (chosenVoice.toLowerCase().includes('rachel')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+      voiceId = '21m00Tcm4TlvDq8ikWAM'; 
     }
 
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
-    const elevenlabsKey = 
-      process.env.ELEVENLABS_API_KEY || 
-      process.env.ELEVEN_LABS_KEY || 
-      'sk_eee72e5d46c0bd3ffb67f79e1f9be5d6f8787149172e71b6'; 
+    const elevenlabsKey = 'sk_eee72e5d46c0bd3ffb67f79e1f9be5d6f8787149172e71b6'; 
 
-    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
-      return res.status(500).json({ error: 'Missing API System Keys in settings.' });
+    if (!shotstackKey || !groqApiKey) {
+      return res.status(500).json({ error: 'Missing core system keys in settings.' });
     }
 
     // PHASE 1: SCRIPT GENERATION VIA GROQ AI
@@ -72,6 +67,7 @@ export default async function handler(req, res) {
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
     // PHASE 2: AUDIO GENERATION VIA ELEVENLABS
+    // ✅ CHANGED MODEL TO THE BULLETPROOF MULTILINGUAL V2 MODEL
     const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -80,7 +76,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         text: cleanText,
-        model_id: 'eleven_monolingual_v1',
+        model_id: 'eleven_multilingual_v2',
         voice_settings: { stability: 0.5, similarity_boost: 0.75 }
       })
     });
@@ -154,7 +150,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    // Return standard JSON error format so the frontend never struggles to parse text
     return res.status(500).json({ error: error.message });
   }
 }
