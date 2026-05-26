@@ -1,50 +1,39 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   }
 
   try {
-    const { videoPrompt, styleSelection, voiceSelection } = req.body;
+    const { videoPrompt, styleSelection } = req.body;
 
-    if (!videoPrompt) {
-      return res.status(400).json({ success: false, error: 'Prompt is required' });
+    if (!videoPrompt || !videoPrompt.trim()) {
+      return res.status(400).json({ success: false, error: 'A video description prompt is required.' });
     }
 
-    // 1. Kick off your generation layers (OpenAI, ElevenLabs, Fal, etc.) here
-    // 2. Build your JSON timeline payload structure for Shotstack
-    
-    // Example Shotstack dispatch request:
-    const shotstackResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
-      method: 'POST',
+    console.log(`Sending prompt to Fal.ai using style: ${styleSelection}`);
+
+    // 🌟 REAL AUTOMATION FLOW: Call Fal.ai directly using your environment key
+    const falResponse = await fetch("https://queue.fal.run/fal-ai/hunyuan-video", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.SHOTSTACK_API_KEY || ''
+        "Authorization": `Key ${process.env.FAL_KEY}`, // Uses your hidden token safely
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        timeline: {
-          soundtrack: { src: "YOUR_GENERATED_ELEVENLABS_URL" },
-          tracks: [
-            // Your background tracks based on styleSelection (gameplay vs storytelling)
-          ]
-        },
-        output: { format: "mp4", resolution: "hd" }
-      })
+        prompt: styleSelection === 'storytelling' 
+          ? `In an animated cartoon illustration style, ${videoPrompt}`
+          : `${videoPrompt}, high quality gameplay video style`,
+        video_size: "landscape_16_9",
+        duration: "5"
+      }),
     });
 
-    const shotstackData = await shotstackResponse.json();
+    const falData = await falResponse.json();
 
-    if (!shotstackResponse.ok || !shotstackData.response) {
-      throw new Error(shotstackData.message || 'Shotstack compilation queue rejected.');
+    if (!falResponse.ok) {
+      throw new Error(falData.detail || 'Fal.ai queue request rejected.');
     }
 
-    // Send the unique render ID back to your React frontend loop
+    // Pass the real tracking request down to your polling mechanism
     return res.status(200).json({
       success: true,
-      id: shotstackData.response.id,
-      message: 'Pipeline initialized successfully.'
-    });
-
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
-}
