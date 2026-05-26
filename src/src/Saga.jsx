@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function ClipBoost() {
+export default function Saga() {
   const [activeTab, setActiveTab] = useState('video');
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('storytelling');
@@ -80,7 +80,6 @@ export default function ClipBoost() {
           <span className="text-lg font-bold tracking-tight text-white uppercase">Saga.AI</span>
         </div>
         
-        {/* Clickable Nav Toggles */}
         <nav className="flex items-center gap-1 bg-[#12121f] p-1 rounded-full border border-white/5">
           {['video', 'image', 'tools', 'assets'].map((tab) => (
             <button
@@ -109,12 +108,10 @@ export default function ClipBoost() {
       {/* 🔮 CENTERED MAIN CREATION SUITE CARD */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-3xl w-full mx-auto">
         
-        {/* Dynamic Context Headers */}
         <h1 className="text-3xl lg:text-4xl font-medium tracking-tight text-slate-200 text-center mb-8">
           {activeTab === 'video' ? 'What will you create?' : 'Create stunning images'}
         </h1>
 
-        {/* The Workspace Interface Frame Box */}
         <div className="w-full bg-[#0d0d16] rounded-2xl border border-white/5 p-6 shadow-2xl flex flex-col">
           
           <textarea
@@ -124,14 +121,12 @@ export default function ClipBoost() {
             className="w-full h-36 bg-transparent text-slate-200 placeholder-slate-600 text-base outline-none resize-none font-medium leading-relaxed"
             placeholder={
               activeTab === 'video' 
-                ? "Describe the video concept you want to generate (e.g., A historic discovery found deep beneath the mountains...)"
+                ? "Describe the video concept you want to generate..."
                 : "Describe the stunning layout image you want to create..."
             }
           />
 
-          {/* Settings and Actions Footer Panel Bar */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-            
             {activeTab === 'video' ? (
               <div className="flex gap-2">
                 <select
@@ -168,7 +163,7 @@ export default function ClipBoost() {
           </div>
         </div>
 
-        {/* 🎬 PREVIEW VIEWPORT (Renders directly underneath the main box) */}
+        {/* 🎬 PREVIEW VIEWPORT */}
         {(loading || videoUrl) && (
           <div className="w-full max-w-xs mt-8 bg-[#0d0d16] rounded-2xl border border-white/5 p-4 flex flex-col items-center shadow-2xl">
             <p className="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">
