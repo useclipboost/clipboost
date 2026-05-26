@@ -1,50 +1,50 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
-    const body = req.body || {};
-    const idea = body.idea || body.videoPrompt || '';
-    const chosenVoice = body.voice || body.voiceSelection || 'adam';
-    // 🎭 Capture user choice: 'gameplay' or 'storytelling'
-    const videoStyle = body.styleSelection || 'gameplay'; 
+    const { videoPrompt, styleSelection, voiceSelection } = req.body;
 
-    if (!idea) {
-      return res.status(400).json({ error: 'Missing video concept prompt' });
+    if (!videoPrompt) {
+      return res.status(400).json({ success: false, error: 'Prompt is required' });
     }
 
-    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam (Deep Viral Narration)
-    if (chosenVoice.toLowerCase().includes('rachel') || chosenVoice.toLowerCase().includes('female')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
-    }
-
-    const shotstackKey = process.env.SHOTSTACK_API_KEY;
-    const groqApiKey = process.env.OPENAI_API_KEY; 
-    const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
-
-    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
-      return res.status(500).json({ 
-        error: 'Missing required API keys in environment configurations.' 
-      });
-    }
-
-    // STEP 1: GENERATE PUNCHY MULTI-SEGMENT SCRIPT VIA GROQ AI
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // 1. Kick off your generation layers (OpenAI, ElevenLabs, Fal, etc.) here
+    // 2. Build your JSON timeline payload structure for Shotstack
+    
+    // Example Shotstack dispatch request:
+    const shotstackResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groqApiKey}`
+        'x-api-key': process.env.SHOTSTACK_API_KEY || ''
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        response_format: { type: "json_object" },
-        messages:
+        timeline: {
+          soundtrack: { src: "YOUR_GENERATED_ELEVENLABS_URL" },
+          tracks: [
+            // Your background tracks based on styleSelection (gameplay vs storytelling)
+          ]
+        },
+        output: { format: "mp4", resolution: "hd" }
+      })
+    });
+
+    const shotstackData = await shotstackResponse.json();
+
+    if (!shotstackResponse.ok || !shotstackData.response) {
+      throw new Error(shotstackData.message || 'Shotstack compilation queue rejected.');
+    }
+
+    // Send the unique render ID back to your React frontend loop
+    return res.status(200).json({
+      success: true,
+      id: shotstackData.response.id,
+      message: 'Pipeline initialized successfully.'
+    });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
