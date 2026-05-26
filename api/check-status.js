@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   if (!id) {
-    return res.status(400).json({ success: false, error: 'Missing standard tracking query ID.' });
+    return res.status(400).json({ success: false, error: 'Missing tracking ID.' });
   }
 
   try {
@@ -13,18 +13,12 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
-    let formattedResponse = {
-      response: {
-        status: 'processing',
-        url: null
-      }
-    };
+    let formattedResponse = { response: { status: 'processing', url: null } };
 
     if (data.status === 'COMPLETED') {
       formattedResponse.response.status = 'done';
-      // Fallback matrix to grab the video URL from Fal's dynamic output format
-      formattedResponse.response.url = data.logs || data.video?.url || (data.outputs && data.outputs[0]?.file?.url);
+      // Pulls video asset tracking layer links cleanly
+      formattedResponse.response.url = data.video?.url || (data.outputs && data.outputs[0]?.file?.url) || data.logs;
     } else if (data.status === 'FAILED') {
       formattedResponse.response.status = 'failed';
     }
