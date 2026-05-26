@@ -62,15 +62,4 @@ export default async function handler(req, res) {
       throw new Error(`Groq AI Error: ${errText || groqResponse.statusText}`);
     }
 
-    const groqData = await groqResponse.json();
-    const aiContent = JSON.parse(groqData.choices[0].message.content);
-    
-    const hook = aiContent.hookText.replace(/"/g, "'").trim();
-    const middle = aiContent.bodyText.replace(/"/g, "'").trim();
-    const payoff = aiContent.payoffText.replace(/"/g, "'").trim();
-    const fullCombinedText = `${hook} ${middle} ${payoff}`;
-
-    // PHASE 2: VERIFIED SHOTSTACK PRODUCTION CDN ASSETS
-    // These direct Amazon S3 links are whitelisted and guaranteed never to crash the engine
-    const scene1Video = 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/videos/earth.mp4';  // Cosmic Earth
-    const scene2Video
+    const
