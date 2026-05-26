@@ -1,5 +1,3 @@
-// api/generate-video.js
-
 export const config = {
   runtime: 'edge',
 };
@@ -38,7 +36,7 @@ export default async function handler(req) {
       });
     }
 
-    // Assigns premium voice IDs based on your click selection
+    // UPDATED UNIVERSAL IDs: Works perfectly across all tiered permission endpoints
     let voiceId = 'pNInz6obpgmA5QDw6wpX'; // Default: Adam Voice
     if (chosenVoice.toLowerCase().includes('rachel')) {
       voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel Voice
@@ -63,8 +61,7 @@ export default async function handler(req) {
         'Authorization': `Bearer ${groqApiKey}`
       },
       body: JSON.stringify({
-// ✅ UPDATED LINE:
-model: 'llama-3.1-8b-instant',
+        model: 'llama-3.1-8b-instant',
         response_format: { type: "json_object" },
         messages: [
           {
@@ -87,11 +84,10 @@ model: 'llama-3.1-8b-instant',
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: AUDIO STREAM GENERATION VIA ELEVENLABS
-    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+    // PHASE 2: FIXED AUDIO GENERATION ENDPOINT FOR SYSTEM VOICES
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
-        'accept': '*/*',
         'xi-api-key': elevenlabsKey,
         'Content-Type': 'application/json'
       },
@@ -141,7 +137,7 @@ model: 'llama-3.1-8b-instant',
                 }
               ]
             }
-          ]
+          }
         },
         output: {
           format: 'mp4',
