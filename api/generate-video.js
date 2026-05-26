@@ -20,18 +20,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    // ElevenLabs system voice IDs
-    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Default: Adam
-    if (chosenVoice.toLowerCase().includes('rachel')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+    let systemVoice = 'Matthew'; 
+    if (chosenVoice.toLowerCase().includes('rachel') || chosenVoice.toLowerCase().includes('female')) {
+      systemVoice = 'Joanna'; 
     }
 
+    // ✅ SECURE HOOKS: Pulls straight from your Vercel Settings panel
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
-    const elevenlabsKey = process.env.ELEVENLABS_API_KEY || 'sk_eee72e5d46c0bd3ffb67f79e1f9be5d6f8787149172e71b6'; 
 
-    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
-      return res.status(500).json({ error: 'Missing API System Keys configuration.' });
+    if (!shotstackKey || !groqApiKey) {
+      return res.status(500).json({ 
+        error: 'System missing SHOTSTACK_API_KEY or OPENAI_API_KEY in Vercel settings.' 
+      });
     }
 
     // PHASE 1: SCRIPT GENERATION VIA GROQ AI
@@ -66,33 +67,8 @@ export default async function handler(req, res) {
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
 
-    // PHASE 2: AUDIO GENERATION VIA ELEVENLABS
-    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': elevenlabsKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: cleanText,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-      })
-    });
-
-    if (!ttsResponse.ok) {
-      throw new Error(`ElevenLabs TTS Failed with status: ${ttsResponse.status}`);
-    }
-
-    // ✅ REWRITTEN TO GENERATE A PERFECT WEB-COMPLIANT DATA URI STRING
-    const audioBuffer = await ttsResponse.arrayBuffer();
-    const base64Audio = btoa(
-      new Uint8Array(audioBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
-    const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
-
-    // PHASE 3: COMPILATION ENGINE VIA SHOTSTACK
-    const renderResponse = await fetch('https://api.shotstack.io/v1/render', {
+    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE
+    const renderResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,16 +82,14 @@ export default async function handler(req, res) {
               clips: [
                 {
                   asset: {
-                    type: 'rich-text',
-                    text: `<p align="center">${cleanText}</p>`,
-                    font: {
-                      color: '#ffffff',
-                      size: 24
-                    }
+                    type: 'html',
+                    html: `<p align="center">${cleanText}</p>`,
+                    css: 'p { font-family: "Helvetica Neue", Arial; font-size: 28px; color: #ffffff; font-weight: bold; text-align: center; }',
+                    width: 600,
+                    height: 200
                   },
                   start: 0,
-                  length: 12,
-                  position: 'center'
+                  length: 12
                 }
               ]
             },
@@ -123,8 +97,9 @@ export default async function handler(req, res) {
               clips: [
                 {
                   asset: {
-                    type: 'audio',
-                    src: audioDataUrl
+                    type: 'text-to-speech',
+                    text: cleanText,
+                    voice: systemVoice
                   },
                   start: 0,
                   length: 12
@@ -147,9 +122,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      renderId: renderData.response.id,
-      id: renderData.response.id,
-      response: { id: renderData.response.id }
+      id: renderData.response.id
     });
 
   } catch (error) {
