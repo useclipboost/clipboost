@@ -6,7 +6,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ping Fal's secure request check endpoint
     const response = await fetch(`https://queue.fal.run/fal-ai/hunyuan-video/requests/${id}`, {
       headers: {
         'Authorization': `Key ${process.env.FAL_KEY}`
@@ -15,7 +14,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Re-format Fal's response keys so your React frontend reads them flawlessly
     let formattedResponse = {
       response: {
         status: 'processing',
