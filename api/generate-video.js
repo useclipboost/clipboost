@@ -20,23 +20,22 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing video concept prompt' });
     }
 
-    // 🎙️ Premium ElevenLabs Voice Setup
-    let voiceId = 'pNInz6obpgDQGcFmaJgB'; // Adam
+    let systemVoice = 'Matthew'; 
     if (chosenVoice.toLowerCase().includes('rachel') || chosenVoice.toLowerCase().includes('female')) {
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+      systemVoice = 'Joanna'; 
     }
 
+    // ✅ SECURE HOOKS: Pulls straight from your Vercel Settings panel
     const shotstackKey = process.env.SHOTSTACK_API_KEY;
     const groqApiKey = process.env.OPENAI_API_KEY; 
-    const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
 
-    if (!shotstackKey || !groqApiKey || !elevenlabsKey) {
+    if (!shotstackKey || !groqApiKey) {
       return res.status(500).json({ 
-        error: 'System missing environmental variable keys in Vercel settings.' 
+        error: 'System missing SHOTSTACK_API_KEY or OPENAI_API_KEY in Vercel settings.' 
       });
     }
 
-    // PHASE 1: SMART SCRIPT & VISUAL KEYWORD GENERATION VIA GROQ AI
+    // PHASE 1: SCRIPT GENERATION VIA GROQ AI
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -49,7 +48,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: 'You are an AI video producer. Create a concise, engaging 12-second narration. Also provide one single background search keyword (e.g., "space", "mystery", "ocean") that matches the mood. Return a JSON object with exactly these two keys: "scriptText" and "visualKeyword". Keep script under 25 words.'
+            content: 'You are an expert viral content scriptwriter. Create a concise, engaging 12-second narrative statement. Return a JSON object with exactly this key: "scriptText" (keep under 30 words total).'
           },
           {
             role: 'user',
@@ -60,16 +59,73 @@ export default async function handler(req, res) {
     });
 
     if (!groqResponse.ok) {
-      throw new Error('Groq AI failed to generate script assets.');
+      const errText = await groqResponse.text();
+      throw new Error(`Groq AI Error: ${errText || groqResponse.statusText}`);
     }
 
     const groqData = await groqResponse.json();
     const aiContent = JSON.parse(groqData.choices[0].message.content);
     const cleanText = aiContent.scriptText.replace(/"/g, "'").replace(/\n/g, ' ').trim();
-    const searchKeyword = aiContent.visualKeyword || 'cinematic';
 
-    // PHASE 2: REALISTIC AUDIO GENERATION VIA ELEVENLABS
-    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    // PHASE 2: COMPILATION VIA NATIVE SHOTSTACK V1 PRODUCTION ENGINE
+    const renderResponse = await fetch('https://api.shotstack.io/edit/v1/render', {
       method: 'POST',
       headers: {
-        'xi-api-key
+        'Content-Type': 'application/json',
+        'x-api-key': shotstackKey
+      },
+      body: JSON.stringify({
+        timeline: {
+          background: '#1a1a2e',
+          tracks: [
+            {
+              clips: [
+                {
+                  asset: {
+                    type: 'html',
+                    html: `<p align="center">${cleanText}</p>`,
+                    css: 'p { font-family: "Helvetica Neue", Arial; font-size: 28px; color: #ffffff; font-weight: bold; text-align: center; }',
+                    width: 600,
+                    height: 200
+                  },
+                  start: 0,
+                  length: 12
+                }
+              ]
+            },
+            {
+              clips: [
+                {
+                  asset: {
+                    type: 'text-to-speech',
+                    text: cleanText,
+                    voice: systemVoice
+                  },
+                  start: 0,
+                  length: 12
+                }
+              ]
+            }
+          ]
+        },
+        output: {
+          format: 'mp4',
+          resolution: 'sd'
+        }
+      })
+    });
+
+    const renderData = await renderResponse.json();
+    if (!renderResponse.ok) {
+      throw new Error(`Shotstack API Error: ${renderData.message || renderResponse.statusText}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      id: renderData.response.id
+    });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
