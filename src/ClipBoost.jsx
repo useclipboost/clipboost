@@ -21,7 +21,7 @@ export default function ClipBoost() {
     setStatusMessage('Submitting prompt layout to Shotstack...');
 
     try {
-      // ✅ FIXED: Now safely bundling voice and target configurations into your fetch payload
+      // Safely bundle voice selections into the body payload
       const response = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,22 +38,20 @@ export default function ClipBoost() {
         throw new Error(data.error || 'The server rejected the initial asset submission.');
       }
 
-      // Smart tracking catch-all matching logic
       const renderId = data.renderId || data.id || data.response?.id;
       if (!renderId) {
         throw new Error('Critical Error: Server did not return a valid tracking identifier (renderId).');
       }
 
-      // Step 2: Kick off frontend client-safe browser polling loop
+      // Step 2: Client polling loop
       let completedUrl = null;
       let attempts = 0;
-      const maxAttempts = 100; // 100 loops * 3 seconds = 300 seconds maximum padding
+      const maxAttempts = 60; // 60 loops * 4 seconds = 240 seconds max timeout
 
       while (!completedUrl && attempts < maxAttempts) {
         setStatusMessage(`Rendering Pipeline Active... Cooking video frames (Check #${attempts + 1})`);
         
-        // Pause execution for 3 seconds before checking status
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 4000));
         attempts++;
 
         const statusCheck = await fetch(`/api/check-status?id=${renderId}`);
@@ -61,9 +59,8 @@ export default function ClipBoost() {
 
         const statusData = await statusCheck.json();
 
-        // Check if Shotstack has successfully written the completed asset flag
         if (statusData.status === 'done' || statusData.status === 'completed') {
-          completedUrl = statusData.url; // Capture the verified .mp4 url
+          completedUrl = statusData.url;
           break;
         } else if (statusData.status === 'failed') {
           throw new Error('Shotstack media engine reported an asset rendering configuration crash.');
@@ -74,7 +71,6 @@ export default function ClipBoost() {
         throw new Error('The cloud processing pipeline took too long to compile frames. Please try generating again.');
       }
 
-      // Success! Set the direct video streaming url to state
       setVideoUrl(completedUrl);
       setStatusMessage('');
 
@@ -82,7 +78,7 @@ export default function ClipBoost() {
       console.error('Pipeline Processing Failure:', err);
       setError(err.message || 'An unhandled exception occurred in the render sequence.');
     } finally {
-      loading && setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -93,7 +89,7 @@ export default function ClipBoost() {
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-        {/* Left Side: Custom Controls UI Dashboard */}
+        {/* Controls Panel */}
         <div style={{ backgroundColor: '#1f2833', padding: '30px', borderRadius: '12px' }}>
           <h2 style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>🎬 AI Video Generation Engine</h2>
           
@@ -106,13 +102,4 @@ export default function ClipBoost() {
           />
 
           <label style={{ display: 'block', fontSize: '12px', color: '#c5a059', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>Target Platform</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-            {['TikTok Short', 'YT Shorts', 'IG Reels'].map((platform) => (
-              <button key={platform} onClick={() => setTargetPlatform(platform)} style={{ padding: '12px', backgroundColor: targetPlatform === platform ? '#fff' : '#0b0c10', color: targetPlatform === platform ? '#000' : '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}>{platform}</button>
-            ))}
-          </div>
-
-          <label style={{ display: 'block', fontSize: '12px', color: '#c5a059', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>AI Narrator Voice</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '30px' }}>
-            {['Adam (Deep Viral Male)', 'Rachel (Energetic Female)'].map((voice) => (
-              <button key={voice} onClick={() => setNarratorVoice(voice)} style={{ padding: '12px', backgroundColor: narratorVoice === voice ? '#222' : '#0b0c10', color: '#fff', border: narratorVoice === voice ? '1px solid #45
+          <div style={{ display: 'grid', gridTemplateColumns:
